@@ -23,79 +23,92 @@ export default async function handler(req, res) {
   const table = isAssets ? 'fishing_assets' : 'fishing_trips';
 
   const headers = {
-    'apikey': serviceKey,
-    'Authorization': `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
     'Content-Type': 'application/json'
   };
 
   try {
     if (req.method === 'GET') {
-      const select = isAssets
-        ? 'asset_key,asset_type,record_id,place,sort_order,payload,data,updated_at,deleted_at,source_device'
-        : 'record_id,trip_date,payload,updated_at,deleted_at,source_device';
+      if (isAssets) {
+        const assetKey = String(req.query?.asset_key || '');
+        const meta = String(req.query?.meta || '') === '1';
 
-      const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=updated_at.asc`;
-      const r = await fetch(url, { headers, cache: 'no-store' });
-      const text = await r.text();
-      if (!r.ok) {
-        return res.status(r.status).json({ ok: false, error: text.slice(0, 500) });
+        if (assetKey) {
+          const select = 'asset_key,asset_type,record_id,place,sort_order,payload,data,updated_at,deleted_at,source_device';
+          const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&asset_key=eq.${encodeURIComponent(assetKey)}`;
+          const r = await fetch(url, { headers, cache: 'no-store' });
+          const text = await r.text();
+          if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
+          return res.status(200).send(text || '[]');
+        }
+
+        if (meta) {
+          /* Critical: omit base64/image data so response stays well below Vercel limits. */
+          const select = 'asset_key,asset_type,record_id,place,sort_order,payload,updated_at,deleted_at,source_device';
+          const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=updated_at.asc`;
+          const r = await fetch(url, { headers, cache:'no-store' });
+          const text = await r.text();
+          if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
+          return res.status(200).send(text || '[]');
+        }
+
+        return res.status(400).json({ ok:false, error:'assets_get_requires_meta_or_asset_key' });
       }
+
+      const select = 'record_id,trip_date,payload,updated_at,deleted_at,source_device';
+      const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=updated_at.asc`;
+      const r = await fetch(url, { headers, cache:'no-store' });
+      const text = await r.text();
+      if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
       return res.status(200).send(text || '[]');
     }
 
     if (req.method === 'POST') {
       const records = Array.isArray(req.body?.records) ? req.body.records : [];
-      if (!records.length) return res.status(200).json({ ok: true, upserted: 0 });
+      if (!records.length) return res.status(200).json({ ok:true, upserted:0 });
 
       const safe = records.map((x) => {
         if (isAssets) {
           return {
-            asset_key: String(x.asset_key || ''),
-            asset_type: String(x.asset_type || ''),
-            record_id: x.record_id == null ? null : String(x.record_id),
-            place: x.place == null ? null : String(x.place),
-            sort_order: x.sort_order == null ? null : Number(x.sort_order),
-            payload: x.payload == null ? null : x.payload,
-            data: x.data == null ? null : String(x.data),
-            updated_at: x.updated_at || new Date().toISOString(),
-            deleted_at: x.deleted_at || null,
-            source_device: x.source_device == null ? null : String(x.source_device)
+            asset_key:String(x.asset_key||''),
+            asset_type:String(x.asset_type||''),
+            record_id:x.record_id==null?null:String(x.record_id),
+            place:x.place==null?null:String(x.place),
+            sort_order:x.sort_order==null?null:Number(x.sort_order),
+            payload:x.payload==null?null:x.payload,
+            data:x.data==null?null:String(x.data),
+            updated_at:x.updated_at||new Date().toISOString(),
+            deleted_at:x.deleted_at||null,
+            source_device:x.source_device==null?null:String(x.source_device)
           };
         }
         return {
-          record_id: String(x.record_id || ''),
-          trip_date: x.trip_date || null,
-          payload: x.payload || {},
-          updated_at: x.updated_at || new Date().toISOString(),
-          deleted_at: x.deleted_at || null,
-          source_device: x.source_device == null ? null : String(x.source_device)
+          record_id:String(x.record_id||''),
+          trip_date:x.trip_date||null,
+          payload:x.payload||{},
+          updated_at:x.updated_at||new Date().toISOString(),
+          deleted_at:x.deleted_at||null,
+          source_device:x.source_device==null?null:String(x.source_device)
         };
-      }).filter((x) => isAssets ? (x.asset_key && x.asset_type) : x.record_id);
+      }).filter((x)=>isAssets?(x.asset_key&&x.asset_type):x.record_id);
 
-      if (!safe.length) return res.status(200).json({ ok: true, upserted: 0 });
+      if (!safe.length) return res.status(200).json({ ok:true, upserted:0 });
 
       const onConflict = isAssets ? 'asset_key' : 'record_id';
       const url = `${base}/rest/v1/${table}?on_conflict=${onConflict}`;
       const r = await fetch(url, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify(safe)
+        method:'POST',
+        headers:{...headers, Prefer:'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify(safe)
       });
       const text = await r.text();
-      if (!r.ok) {
-        return res.status(r.status).json({ ok: false, error: text.slice(0, 500) });
-      }
-      return res.status(200).json({ ok: true, upserted: safe.length });
+      if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
+      return res.status(200).json({ ok:true, upserted:safe.length });
     }
 
-    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+    return res.status(405).json({ ok:false, error:'method_not_allowed' });
   } catch (e) {
-    return res.status(500).json({
-      ok: false,
-      error: String(e && e.message ? e.message : e)
-    });
+    return res.status(500).json({ ok:false, error:String(e?.message || e) });
   }
 }
