@@ -50799,7 +50799,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.46 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.47 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51018,7 +51018,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.46</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.47</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51285,7 +51285,9 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     syncNow:syncNow,
     push:push,
     pull:pull,
-    forgetKey:function(){localStorage.removeItem(KEY_NAME);}
+    forgetKey:function(){localStorage.removeItem(KEY_NAME);},
+    setKey:function(k){k=String(k||'').trim(); if(k){localStorage.setItem(KEY_NAME,k); return true;} return false;},
+    askKey:function(){var k=syncKey(true); return !!k;}
   };
 
   function hook(){
@@ -51300,10 +51302,11 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
   async function boot(){
     hook();
-    /* Ask once per browser/device. The key is NOT embedded in public GitHub HTML. */
-    if(!syncKey(false)){
-      syncKey(true);
-    }
+    /*
+      Ver.0.47:
+      Do not prompt for the sync key automatically on page load.
+      This prevents the sync dialog from blocking Settings/Restore.
+    */
     if(syncKey(false)){
       await syncNow(false);
       setInterval(function(){syncNow(false);},60000);
@@ -51320,7 +51323,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.46: entry layout stabilized on all test viewport widths; PC/iPhone cloud sync added. -->
+<!-- Ver.0.47: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
 
 </body>
 <!-- Ver.1.1.160: 餌分類を新体系へ全過去データ一括変換。とろセット→トロロセット、グルダンゴ追加、過去専用分類・マッシュ統一を反映。 -->
