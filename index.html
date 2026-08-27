@@ -10133,7 +10133,12 @@ html.search-booting-v1146 #search{
 <div class="data-check-actions-v11147">
 <button type="button" class="data-check-open-v11139" onclick="window.openDataCheckV11139 && window.openDataCheckV11139()">桟橋・ポイント／座席番号を確認</button>
 </div>
-</div><div id="backupNotice" class="notice" style="display:none;margin-bottom:14px">月末です。念のためバックアップを書き出しておくことをおすすめします。</div><div class="grid3"><div class="card settings-card-backup"><h2>バックアップ</h2><p class="muted">釣行データ・写真・釣り場マップ・ピン・ホーム用写真までまとめてJSONに保存します。</p><button class="primary" onclick="exportBackup()">バックアップを書き出す</button></div><div class="card settings-card-restore"><h2>復元</h2><p class="muted">バックアップ内容を事前検証し、写真を含む全データを復元します。失敗時は元の状態へ戻します。</p><input id="restoreFile" type="file" accept="application/json"><label for="restoreFile" class="v11117-restore-zone" id="restoreChooserV11117" tabindex="0"><span class="v11117-restore-icon">＋</span><span class="v11117-restore-title">バックアップファイルを選択</span><span class="v11117-restore-sub">クリックしてJSONファイルを選択、またはここへドラッグ＆ドロップ</span><span class="v11117-restore-name" id="restoreFilenameV11117"></span></label><button id="restoreBtn" class="secondary" onclick="restoreBackup()" disabled>復元する</button></div><div class="card settings-card-delete"><h2>データ全削除</h2><p class="muted">Excelから読み込んだ元データは残し、追加・編集・設定を消します。</p><div class="settings-danger-note">この操作は元に戻せません。</div><button class="danger" onclick="deleteAllUserData()">ユーザーデータを全削除</button></div></div></section>
+</div><div id="backupNotice" class="notice" style="display:none;margin-bottom:14px">月末です。念のためバックアップを書き出しておくことをおすすめします。</div><div class="grid3"><div class="card settings-card-backup"><h2>バックアップ</h2><p class="muted">釣行データ・写真・釣り場マップ・ピン・ホーム用写真までまとめてJSONに保存します。</p><button class="primary" onclick="exportBackup()">バックアップを書き出す</button></div><div class="card settings-card-restore"><h2>復元</h2><p class="muted">バックアップ内容を事前検証し、写真を含む全データを復元します。失敗時は元の状態へ戻します。</p><input id="restoreFile" type="file" accept="application/json"><label for="restoreFile" class="v11117-restore-zone" id="restoreChooserV11117" tabindex="0"><span class="v11117-restore-icon">＋</span><span class="v11117-restore-title">バックアップファイルを選択</span><span class="v11117-restore-sub">クリックしてJSONファイルを選択、またはここへドラッグ＆ドロップ</span><span class="v11117-restore-name" id="restoreFilenameV11117"></span></label><button id="restoreBtn" class="secondary" onclick="restoreBackup()" disabled>復元する</button></div><div class="card settings-card-cloudsync">
+<h2>PC・iPhone同期</h2>
+<p class="muted">復元した釣行データをSupabaseへ送ります。初回だけ同期キーを入力します。</p>
+<button class="primary" type="button" onclick="heraInitialCloudSyncV049()">今すぐ同期する</button>
+<div id="heraCloudSyncStatusV049" class="muted" style="margin-top:10px"></div>
+</div><div class="card settings-card-delete"><h2>データ全削除</h2><p class="muted">Excelから読み込んだ元データは残し、追加・編集・設定を消します。</p><div class="settings-danger-note">この操作は元に戻せません。</div><button class="danger" onclick="deleteAllUserData()">ユーザーデータを全削除</button></div></div></section>
 </main></div>
 <div id="detail" class="detail"><div class="detail-card"><button id="detailEditTop" class="secondary detail-top-edit" type="button" style="display:none" onclick="detailEditCurrent(event)">編集</button><button class="close" onclick="closeDetail()">閉じる</button><h2 id="dTitle"></h2><div id="dContent"></div></div></div>
 <script>
@@ -50817,7 +50822,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.48 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.49 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51036,7 +51041,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.48</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.49</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51308,6 +51313,39 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     askKey:function(){var k=syncKey(true); return !!k;}
   };
 
+  window.heraInitialCloudSyncV049=async function(){
+    var el=document.getElementById('heraCloudSyncStatusV049');
+    try{
+      if(el) el.textContent='同期準備中…';
+      var k=syncKey(false);
+      if(!k){
+        k=(prompt('PC・iPhone同期キーを入力してください。\\n最初の1回だけ入力します。')||'').trim();
+        if(!k){
+          if(el) el.textContent='同期をキャンセルしました。';
+          return;
+        }
+        localStorage.setItem(KEY_NAME,k);
+      }
+
+      /* Initial seed: rebuild metadata so every current local record is sent. */
+      localStorage.removeItem(META_KEY);
+      var remote=await pull(true);
+      if(remote===null){
+        if(el) el.textContent='同期できませんでした。同期キーまたは通信設定を確認してください。';
+        return;
+      }
+      scanLocal(true);
+      var count=await push(true);
+      await pull(false);
+      if(el) el.textContent='同期完了：'+count+'件を送信しました。';
+      alert('PC・iPhone同期が完了しました。\\nSupabaseの fishing_trips を更新してください。');
+    }catch(e){
+      console.warn(e);
+      if(el) el.textContent='同期エラー：'+(e && e.message ? e.message : e);
+      alert('同期でエラーが発生しました。');
+    }
+  };
+
   function hook(){
     var form=document.getElementById('entryForm');
     if(form && form.dataset.cloudSyncHookV2!=='1'){
@@ -51321,7 +51359,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.48:
+      Ver.0.49:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51341,7 +51379,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.48: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
+<!-- Ver.0.49: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
 
 </body>
 <!-- Ver.1.1.160: 餌分類を新体系へ全過去データ一括変換。とろセット→トロロセット、グルダンゴ追加、過去専用分類・マッシュ統一を反映。 -->
