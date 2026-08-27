@@ -10176,7 +10176,7 @@ html.iphone-entry-v001 #search{
 </div>
 </div><div id="backupNotice" class="notice" style="display:none;margin-bottom:14px">月末です。念のためバックアップを書き出しておくことをおすすめします。</div><div class="grid3"><div class="card settings-card-backup"><h2>バックアップ</h2><p class="muted">釣行データ・写真・釣り場マップ・ピン・ホーム用写真までまとめてJSONに保存します。</p><button class="primary" onclick="exportBackup()">バックアップを書き出す</button></div><div class="card settings-card-restore"><h2>復元</h2><p class="muted">バックアップ内容を事前検証し、写真を含む全データを復元します。失敗時は元の状態へ戻します。</p><input id="restoreFile" type="file" accept="application/json"><label for="restoreFile" class="v11117-restore-zone" id="restoreChooserV11117" tabindex="0"><span class="v11117-restore-icon">＋</span><span class="v11117-restore-title">バックアップファイルを選択</span><span class="v11117-restore-sub">クリックしてJSONファイルを選択、またはここへドラッグ＆ドロップ</span><span class="v11117-restore-name" id="restoreFilenameV11117"></span></label><button id="restoreBtn" class="secondary" onclick="restoreBackup()" disabled>復元する</button></div><div class="card settings-card-cloudsync">
 <h2>PC・iPhone同期</h2>
-<p class="muted">釣行データ・写真・釣り場マップ・ピンをSupabaseと同期します。初回設定後は、PCは自動送信、iPhoneは起動・復帰時に自動取得します。</p>
+<p class="muted">釣行データ・写真・釣り場マップ・ピンを同期します。PCは変更を自動送信し、iPhoneは起動・復帰時にクラウドから自動取得します。</p>
 <button class="primary" type="button" onclick="heraInitialCloudSyncV049()">手動で今すぐ同期</button>
 <div id="heraCloudSyncStatusV049" class="muted" style="margin-top:10px"></div>
 </div><div class="card settings-card-delete"><h2>データ全削除</h2><p class="muted">Excelから読み込んだ元データは残し、追加・編集・設定を消します。</p><div class="settings-danger-note">この操作は元に戻せません。</div><button class="danger" onclick="deleteAllUserData()">ユーザーデータを全削除</button></div></div></section>
@@ -50863,7 +50863,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.53 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.54 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51082,7 +51082,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.53</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.54</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51327,18 +51327,20 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     if(!k) return false;
 
     /*
-      Pull first so a second device does not overwrite existing cloud data.
-      If the cloud is empty, the current device becomes the initial source.
+      Ver.0.54:
+      Scan LOCAL first. This is critical:
+      - a newly-created record must become dirty before cloud pull
+      - a locally-edited record must be protected from an older cloud copy
     */
-    var remote=await pull(interactive);
-    if(remote===null) return false;
-
-    var m=meta();
-    if(!Object.keys(m).length && (!remote || !remote.length)){
+    var beforeMeta=meta();
+    if(!Object.keys(beforeMeta).length){
       scanLocal(true);
     }else{
       scanLocal(false);
     }
+
+    var remote=await pull(interactive);
+    if(remote===null) return false;
 
     await push(interactive);
     await pull(false);
@@ -51406,7 +51408,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.53:
+      Ver.0.54:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51426,7 +51428,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.53: trip data + photos + maps + pins cloud sync enabled. -->
+<!-- Ver.0.54: trip data + photos + maps + pins cloud sync enabled. -->
 
 
 <div id="iphoneMiniNavV050" aria-label="iPhone画面切替">
@@ -51719,50 +51721,80 @@ window.heraIPhoneCloudPullV051=async function(){
 </script>
 
 
-<script id="hera-auto-sync-v053">
+<script id="hera-auto-sync-v054">
 (function(){
   'use strict';
 
   var KEY='hera_cloud_sync_key_v2';
   var running=false;
   var lastRun=0;
+  var ASSET_VER_KEY='hera_asset_remote_version_v054';
 
   function hasKey(){
     return !!(localStorage.getItem(KEY)||'').trim();
   }
-
   function isIPhoneLike(){
     return /iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
+  }
+  function maxAssetVersion(rows){
+    var mx='';
+    (Array.isArray(rows)?rows:[]).forEach(function(r){
+      var t=String((r&&r.updated_at)||'');
+      if(t>mx) mx=t;
+    });
+    return mx;
+  }
+
+  async function pcSync(){
+    if(window.heraCloudSync && typeof window.heraCloudSync.syncNow==='function'){
+      await window.heraCloudSync.syncNow(false);
+    }
+    if(window.heraAssetSyncV052){
+      await window.heraAssetSyncV052.pushAll(false);
+    }
+  }
+
+  async function iphonePull(){
+    // iPhone auto mode is download-only. It never uploads stale local data.
+    if(window.heraCloudSync && typeof window.heraCloudSync.pull==='function'){
+      await window.heraCloudSync.pull(false);
+    }
+
+    if(window.heraAssetSyncV052){
+      var ar=await window.heraAssetSyncV052.pullAll(false);
+      if(ar && ar.rows){
+        var ver=maxAssetVersion(ar.rows);
+        var prev=localStorage.getItem(ASSET_VER_KEY)||'';
+        if(ver) localStorage.setItem(ASSET_VER_KEY,ver);
+
+        // If cloud assets actually changed, reload ONCE so photo thumbnails/maps
+        // are rebuilt from IndexedDB/localStorage. The stored version prevents loops.
+        if(prev && ver && prev!==ver){
+          setTimeout(function(){ location.reload(); },250);
+        }
+      }
+    }
+
+    try{ if(typeof refresh==='function') refresh(); }catch(_e){}
+    try{ if(typeof renderSearch==='function') renderSearch(); }catch(_e){}
   }
 
   async function autoRun(reason){
     if(!hasKey() || running) return;
     var now=Date.now();
-    if(now-lastRun < 8000) return; // avoid duplicate focus/load bursts
+    if(now-lastRun<8000) return;
     running=true;
     lastRun=now;
-
     try{
-      if(window.heraCloudSync && typeof window.heraCloudSync.syncNow==='function'){
-        await window.heraCloudSync.syncNow(false);
-      }
-
-      if(window.heraAssetSyncV052){
-        if(isIPhoneLike()){
-          // iPhone: latest photos/maps/pins are fetched automatically.
-          await window.heraAssetSyncV052.pullAll(false);
-        }else{
-          // PC: current photos/maps/pins are uploaded automatically.
-          await window.heraAssetSyncV052.pushAll(false);
-        }
-      }
+      if(isIPhoneLike()) await iphonePull();
+      else await pcSync();
 
       try{
-        localStorage.setItem('hera_auto_sync_last_v053', new Date().toISOString());
+        localStorage.setItem('hera_auto_sync_last_v054',new Date().toISOString());
       }catch(_e){}
-      console.log('[Hera Auto Sync v0.53]', reason, 'ok');
+      console.log('[Hera Auto Sync v0.54]',reason,'ok');
     }catch(e){
-      console.warn('[Hera Auto Sync v0.53]', reason, e);
+      console.warn('[Hera Auto Sync v0.54]',reason,e);
     }finally{
       running=false;
     }
@@ -51770,19 +51802,11 @@ window.heraIPhoneCloudPullV051=async function(){
 
   function start(){
     if(!hasKey()) return;
-
-    // Open/reload: sync automatically.
-    setTimeout(function(){ autoRun('startup'); }, 1200);
-
-    // Keep data fresh while the page is open.
-    setInterval(function(){ autoRun('interval'); }, 60000);
-
-    // Returning to the app or regaining network also syncs automatically.
-    window.addEventListener('focus', function(){ setTimeout(function(){autoRun('focus')},300); });
-    window.addEventListener('online', function(){ setTimeout(function(){autoRun('online')},300); });
-
-    // When returning from background on iPhone/Safari.
-    document.addEventListener('visibilitychange', function(){
+    setTimeout(function(){autoRun('startup')},1200);
+    setInterval(function(){autoRun('interval')},60000);
+    window.addEventListener('focus',function(){setTimeout(function(){autoRun('focus')},300)});
+    window.addEventListener('online',function(){setTimeout(function(){autoRun('online')},300)});
+    document.addEventListener('visibilitychange',function(){
       if(document.visibilityState==='visible'){
         setTimeout(function(){autoRun('visible')},300);
       }
@@ -51790,12 +51814,12 @@ window.heraIPhoneCloudPullV051=async function(){
   }
 
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', start);
+    document.addEventListener('DOMContentLoaded',start);
   }else{
     start();
   }
 
-  window.heraAutoSyncV053={run:autoRun};
+  window.heraAutoSyncV054={run:autoRun};
 })();
 </script>
 
