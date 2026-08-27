@@ -45784,9 +45784,27 @@ html.iphone-entry-v001 #places .map-toolbar{position:sticky!important;top:0!impo
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveDraftSoon()});
     window.addEventListener('pagehide',()=>{const d=serializeDraft();if(d)jsave(DRAFT_KEY,d)});
   }
-  function boot(){forceEntry();bind();}
+  function isIPhoneEntryMode(){
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
+  }
+  function boot(){
+    bind();
+    if(isIPhoneEntryMode()){
+      forceEntry();
+    }else{
+      document.documentElement.classList.remove('iphone-entry-v001');
+    }
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,250));else setTimeout(boot,250);
-  window.addEventListener('load',()=>setTimeout(()=>{document.documentElement.classList.add('iphone-entry-v001');addHeaderStatus();syncStatus()},350));
+  window.addEventListener('load',()=>setTimeout(()=>{
+    if(isIPhoneEntryMode()){
+      document.documentElement.classList.add('iphone-entry-v001');
+      addHeaderStatus();
+      syncStatus();
+    }else{
+      document.documentElement.classList.remove('iphone-entry-v001');
+    }
+  },350));
 })();
 </script>
 <!-- iPhone入力 Ver.0.1: まず「釣り場で新規釣行を確実に記録する」ことを優先。クラウド送信部は次段階で接続する。 -->
@@ -50799,7 +50817,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.47 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.48 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51018,7 +51036,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.47</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.48</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51303,7 +51321,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.47:
+      Ver.0.48:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51323,7 +51341,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.47: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
+<!-- Ver.0.48: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
 
 </body>
 <!-- Ver.1.1.160: 餌分類を新体系へ全過去データ一括変換。とろセット→トロロセット、グルダンゴ追加、過去専用分類・マッシュ統一を反映。 -->
