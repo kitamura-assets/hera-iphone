@@ -40,7 +40,36 @@ export default async function handler(req, res) {
           const r = await fetch(url, { headers, cache: 'no-store' });
           const text = await r.text();
           if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
-          return res.status(200).send(text || '[]');
+
+          let rows=[];
+          try { rows=JSON.parse(text||'[]'); } catch {}
+          const row=rows[0];
+          if (!row) return res.status(404).json({ ok:false, error:'asset_not_found' });
+
+          const full=String(row.data||'');
+          const start=Math.max(parseInt(String(req.query?.chunk_start||'0'),10)||0,0);
+          const size=Math.min(Math.max(parseInt(String(req.query?.chunk_size||'350000'),10)||350000,50000),500000);
+          const chunk=full.slice(start,start+size);
+
+          const meta={
+            asset_key:row.asset_key,
+            asset_type:row.asset_type,
+            record_id:row.record_id,
+            place:row.place,
+            sort_order:row.sort_order,
+            payload:row.payload,
+            updated_at:row.updated_at,
+            deleted_at:row.deleted_at,
+            source_device:row.source_device
+          };
+
+          return res.status(200).json({
+            ok:true,
+            meta,
+            chunk,
+            total_length:full.length,
+            chunk_start:start
+          });
         }
 
         if (meta) {
