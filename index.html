@@ -3676,7 +3676,7 @@ body{background:linear-gradient(180deg,#faf7f1 0%,#f1e9de 100%)!important;color:
 }
 @media(max-width:1100px){
   #settings .grid3{
-    grid-template-columns:1fr 1fr!important;
+    grid-template-columns:1fr 1fr 1fr!important;
   }
   #settings .card:nth-child(3){
     grid-column:1/-1;
@@ -9900,6 +9900,9 @@ html.iphone-entry-v001 #iphoneMiniNavV050{
 }
 #iphoneMiniNavV050 button[data-target="search"]{
   background:#efe3d4!important;color:#4a2f20!important;
+}
+#iphoneMiniNavV050 button[data-target="sync"]{
+  background:#d7c19f!important;color:#4a2f20!important;
 }
 html.iphone-entry-v001 #search{
   padding:12px 10px calc(90px + env(safe-area-inset-bottom))!important;
@@ -50860,7 +50863,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.50 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.51 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51079,7 +51082,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.50</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.51</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51397,7 +51400,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.50:
+      Ver.0.51:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51417,12 +51420,13 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.50: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
+<!-- Ver.0.51: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
 
 
 <div id="iphoneMiniNavV050" aria-label="iPhone画面切替">
   <button type="button" data-target="entry" onclick="heraIPhonePageV050('entry')">新規釣行</button>
   <button type="button" data-target="search" onclick="heraIPhonePageV050('search')">過去日誌</button>
+  <button type="button" data-target="sync" onclick="heraIPhoneCloudPullV051()">同期</button>
 </div>
 
 
@@ -51444,6 +51448,33 @@ window.heraIPhonePageV050=function(page){
       window.scrollTo(0,0);
     }
   }catch(e){ console.warn(e); }
+};
+</script>
+
+
+<script id="iphone-cloud-pull-v051">
+window.heraIPhoneCloudPullV051=async function(){
+  try{
+    var api=window.heraCloudSync;
+    if(!api){ alert('同期機能の準備ができていません。'); return; }
+    var key=localStorage.getItem('hera_cloud_sync_key_v2')||'';
+    if(!key){
+      key=(prompt('PC・iPhone同期キーを入力してください。\\n最初の1回だけ入力します。')||'').trim();
+      if(!key) return;
+      api.setKey(key);
+    }
+    var rows=await api.pull();
+    if(rows===null){
+      alert('同期キーが一致しません。');
+      api.forgetKey();
+      return;
+    }
+    alert('同期しました。最新データを表示します。');
+    location.reload();
+  }catch(e){
+    console.warn(e);
+    alert('同期でエラーが発生しました。');
+  }
 };
 </script>
 
