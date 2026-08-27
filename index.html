@@ -9910,29 +9910,35 @@ html.iphone-entry-v001 #search{
 </style>
 
 
-<style id="iphone-version-badge-v055">
-/* Ver.0.55: keep the version badge away from detail/edit controls */
-.iphone-version-badge,
-#iphoneVersionBadge,
-[class*="version-badge"],
-[class*="iphone-version"]{
+<style id="iphone-version-badge-v056">
+/* Ver.0.56: compact, non-interactive version badge away from edit controls */
+html.iphone-entry-v001 .iphone-version-badge,
+html.iphone-entry-v001 #iphoneVersionBadge,
+html.iphone-entry-v001 [class*="version-badge"],
+html.iphone-entry-v001 [class*="iphone-version"]{
   position:fixed!important;
-  top:calc(10px + env(safe-area-inset-top))!important;
+  top:calc(58px + env(safe-area-inset-top))!important;
+  left:10px!important;
   right:auto!important;
-  left:12px!important;
-  z-index:9998!important;
+  z-index:9000!important;
   margin:0!important;
+  padding:4px 8px!important;
   max-width:max-content!important;
+  font-size:11px!important;
+  line-height:1.2!important;
   pointer-events:none!important;
+  opacity:.88!important;
 }
-@media (min-width: 821px){
+@media (min-width:821px){
   .iphone-version-badge,
   #iphoneVersionBadge,
   [class*="version-badge"],
   [class*="iphone-version"]{
-    top:12px!important;
-    left:auto!important;
+    position:absolute!important;
+    top:14px!important;
     right:16px!important;
+    left:auto!important;
+    pointer-events:none!important;
   }
 }
 </style>
@@ -50891,7 +50897,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.55 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.56 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51110,7 +51116,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.55</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.56</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51285,7 +51291,13 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       var h=hashObj(rec);
       var x=m[id];
       if(!x){
-        m[id]={hash:h,updated_at:now,dirty:!!markInitialDirty,deleted:false};
+        /*
+          Ver.0.56:
+          A record that exists locally but has no sync metadata is a NEW local record.
+          It must always be uploaded, even when this device already has metadata
+          for older records.
+        */
+        m[id]={hash:h,updated_at:now,dirty:true,deleted:false};
       }else if(x.deleted || x.hash!==h){
         m[id]={hash:h,updated_at:now,dirty:true,deleted:false};
       }
@@ -51355,7 +51367,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     if(!k) return false;
 
     /*
-      Ver.0.55:
+      Ver.0.56:
       Scan LOCAL first. This is critical:
       - a newly-created record must become dirty before cloud pull
       - a locally-edited record must be protected from an older cloud copy
@@ -51428,7 +51440,25 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     if(form && form.dataset.cloudSyncHookV2!=='1'){
       form.dataset.cloudSyncHookV2='1';
       form.addEventListener('submit',function(){
+        /*
+          Ver.0.56:
+          Save trip first, then upload both trip data and photos/assets.
+          The pending flag prevents an automatic cloud pull from erasing a newly
+          selected iPhone photo before it has been uploaded.
+        */
+        try{ localStorage.setItem('hera_asset_local_pending_v056','1'); }catch(_e){}
         setTimeout(function(){syncNow(false);},600);
+        setTimeout(async function(){
+          try{
+            if(window.heraAssetSyncV052){
+              var r=await window.heraAssetSyncV052.pushAll(false);
+              if(r!==null){
+                try{ localStorage.removeItem('hera_asset_local_pending_v056'); }catch(_e){}
+                await window.heraAssetSyncV052.pullAll(false);
+              }
+            }
+          }catch(e){ console.warn('asset save-sync failed',e); }
+        },1800);
       },true);
     }
   }
@@ -51436,7 +51466,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.55:
+      Ver.0.56:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51456,7 +51486,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.55: trip data + photos + maps + pins cloud sync enabled. -->
+<!-- Ver.0.56: trip data + photos + maps + pins cloud sync enabled. -->
 
 
 <div id="iphoneMiniNavV050" aria-label="iPhone画面切替">
@@ -51749,14 +51779,14 @@ window.heraIPhoneCloudPullV051=async function(){
 </script>
 
 
-<script id="hera-auto-sync-v054">
+<script id="hera-auto-sync-v056">
 (function(){
   'use strict';
 
   var KEY='hera_cloud_sync_key_v2';
+  var PENDING='hera_asset_local_pending_v056';
   var running=false;
   var lastRun=0;
-  var ASSET_VER_KEY='hera_asset_remote_version_v054';
 
   function hasKey(){
     return !!(localStorage.getItem(KEY)||'').trim();
@@ -51764,47 +51794,42 @@ window.heraIPhoneCloudPullV051=async function(){
   function isIPhoneLike(){
     return /iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
   }
-  function maxAssetVersion(rows){
-    var mx='';
-    (Array.isArray(rows)?rows:[]).forEach(function(r){
-      var t=String((r&&r.updated_at)||'');
-      if(t>mx) mx=t;
-    });
-    return mx;
-  }
 
-  async function pcSync(){
+  async function syncTrips(){
     if(window.heraCloudSync && typeof window.heraCloudSync.syncNow==='function'){
       await window.heraCloudSync.syncNow(false);
     }
-    if(window.heraAssetSyncV052){
-      await window.heraAssetSyncV052.pushAll(false);
-    }
   }
 
-  async function iphonePull(){
-    // iPhone auto mode is download-only. It never uploads stale local data.
-    if(window.heraCloudSync && typeof window.heraCloudSync.pull==='function'){
-      await window.heraCloudSync.pull(false);
-    }
+  async function syncAssets(){
+    if(!window.heraAssetSyncV052) return;
 
-    if(window.heraAssetSyncV052){
-      var ar=await window.heraAssetSyncV052.pullAll(false);
-      if(ar && ar.rows){
-        var ver=maxAssetVersion(ar.rows);
-        var prev=localStorage.getItem(ASSET_VER_KEY)||'';
-        if(ver) localStorage.setItem(ASSET_VER_KEY,ver);
+    var pending=false;
+    try{ pending=localStorage.getItem(PENDING)==='1'; }catch(_e){}
 
-        // If cloud assets actually changed, reload ONCE so photo thumbnails/maps
-        // are rebuilt from IndexedDB/localStorage. The stored version prevents loops.
-        if(prev && ver && prev!==ver){
-          setTimeout(function(){ location.reload(); },250);
+    if(isIPhoneLike()){
+      /*
+        Normal iPhone use is download-first.
+        But immediately after an iPhone save/photo selection, upload local assets
+        BEFORE pulling, otherwise a cloud pull can replace the local photo store.
+      */
+      if(pending){
+        var up=await window.heraAssetSyncV052.pushAll(false);
+        if(up!==null){
+          try{ localStorage.removeItem(PENDING); }catch(_e){}
+        }else{
+          return;
         }
       }
+      await window.heraAssetSyncV052.pullAll(false);
+    }else{
+      /*
+        PC uploads its local maps/photos, then pulls the merged cloud asset set.
+        This lets photos created on iPhone appear on PC too.
+      */
+      await window.heraAssetSyncV052.pushAll(false);
+      await window.heraAssetSyncV052.pullAll(false);
     }
-
-    try{ if(typeof refresh==='function') refresh(); }catch(_e){}
-    try{ if(typeof renderSearch==='function') renderSearch(); }catch(_e){}
   }
 
   async function autoRun(reason){
@@ -51814,15 +51839,16 @@ window.heraIPhoneCloudPullV051=async function(){
     running=true;
     lastRun=now;
     try{
-      if(isIPhoneLike()) await iphonePull();
-      else await pcSync();
-
+      await syncTrips();
+      await syncAssets();
       try{
-        localStorage.setItem('hera_auto_sync_last_v054',new Date().toISOString());
+        localStorage.setItem('hera_auto_sync_last_v056',new Date().toISOString());
       }catch(_e){}
-      console.log('[Hera Auto Sync v0.54]',reason,'ok');
+      try{ if(typeof refresh==='function') refresh(); }catch(_e){}
+      try{ if(typeof renderSearch==='function') renderSearch(); }catch(_e){}
+      console.log('[Hera Auto Sync v0.56]',reason,'ok');
     }catch(e){
-      console.warn('[Hera Auto Sync v0.54]',reason,e);
+      console.warn('[Hera Auto Sync v0.56]',reason,e);
     }finally{
       running=false;
     }
@@ -51847,7 +51873,7 @@ window.heraIPhoneCloudPullV051=async function(){
     start();
   }
 
-  window.heraAutoSyncV054={run:autoRun};
+  window.heraAutoSyncV056={run:autoRun};
 })();
 </script>
 
@@ -51860,7 +51886,7 @@ window.heraIPhoneCloudPullV051=async function(){
       return /^iPhone版\s*Ver\.0\.\d+$/i.test(t) || /^Ver\.0\.\d+$/i.test(t);
     });
     candidates.forEach(function(el){
-      el.textContent='iPhone版 Ver.0.55';
+      el.textContent='iPhone版 Ver.0.56';
       el.classList.add('iphone-version-badge');
     });
   }
