@@ -50798,6 +50798,530 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      入力途中復元で12時間超の不自然な終了時刻が残った場合も補正。
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
+
+<!-- ===== iPhone Ver.0.46 : layout stabilization + Vercel/Supabase sync ===== -->
+<style id="iphone-v046-final-layout">
+/*
+  This is the dedicated iPhone app, so keep the mobile entry layout stable
+  even when opened from a desktop browser for testing.
+*/
+#entry .entry-shell{
+  width:100%!important;
+  max-width:680px!important;
+  margin:0 auto!important;
+}
+#entry .entry-basic-card .entry-fields{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:none!important;
+  gap:14px!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  align-items:start!important;
+  box-sizing:border-box!important;
+}
+#entry .entry-basic-card .entry-fields > label,
+#entry .entry-basic-card .date-field,
+#entry .entry-basic-card .place-field,
+#entry .entry-basic-card .point-field,
+#entry .entry-basic-card .seat-field,
+#entry .entry-basic-card .start-field,
+#entry .entry-basic-card .end-field,
+#entry .entry-basic-card .weather-field{
+  grid-area:auto!important;
+  grid-column:1!important;
+  grid-row:auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+#entry .entry-basic-card label > span{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:6px!important;
+  width:100%!important;
+  min-height:22px!important;
+  margin:0 0 6px!important;
+  padding:0!important;
+  line-height:1.35!important;
+  white-space:normal!important;
+  overflow:visible!important;
+}
+#entry .entry-basic-card input,
+#entry .entry-basic-card select,
+#entry .entry-basic-card .time-display{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#entry .entry-basic-card .seat-field input{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+#entry .entry-basic-card .spot-pick-row,
+#entry .entry-basic-card .weather-field > .quick{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 118px!important;
+  gap:8px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+}
+#entry .entry-basic-card .spot-pick-row > *,
+#entry .entry-basic-card .weather-field > .quick > *{
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+#entry .entry-basic-card .map-pick-btn,
+#entry .entry-basic-card .weather-field > .quick > .secondary{
+  width:118px!important;
+  min-width:118px!important;
+  max-width:118px!important;
+}
+#entry .entry-basic-card .quick.time-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 84px!important;
+  gap:8px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+#entry .entry-basic-card .time-picker{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+#entry .entry-basic-card .time-display{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  min-height:50px!important;
+  padding:0 14px 0 46px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+#entry .entry-basic-card .time-display #startDisplay,
+#entry .entry-basic-card .time-display #endDisplay,
+#entry .entry-basic-card .time-display span{
+  position:static!important;
+  transform:none!important;
+  margin:0!important;
+}
+#entry .entry-basic-card .quick.time-row > .secondary{
+  width:84px!important;
+  min-width:84px!important;
+  max-width:84px!important;
+  min-height:50px!important;
+  margin:0!important;
+  padding:0 8px!important;
+  white-space:nowrap!important;
+}
+#entry .entry-summary{
+  width:min(680px,calc(100vw - 16px))!important;
+  max-width:680px!important;
+  box-sizing:border-box!important;
+}
+
+/* Real narrow screens: stack only the wider auxiliary buttons. */
+@media(max-width:390px){
+  #entry .entry-basic-card .spot-pick-row,
+  #entry .entry-basic-card .weather-field > .quick{
+    grid-template-columns:1fr!important;
+  }
+  #entry .entry-basic-card .map-pick-btn,
+  #entry .entry-basic-card .weather-field > .quick > .secondary{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+  }
+}
+</style>
+
+<script id="iphone-v046-final-layout-script">
+(function(){
+  'use strict';
+  function imp(el,p,v){ if(el) el.style.setProperty(p,v,'important'); }
+
+  function stabilize(){
+    var root=document.getElementById('entry');
+    if(!root) return;
+
+    var grid=root.querySelector('.entry-basic-card .entry-fields');
+    if(grid){
+      imp(grid,'display','grid');
+      imp(grid,'grid-template-columns','minmax(0,1fr)');
+      imp(grid,'grid-template-areas','none');
+      imp(grid,'gap','14px');
+      imp(grid,'width','100%');
+      imp(grid,'max-width','100%');
+      imp(grid,'min-width','0');
+      grid.querySelectorAll(':scope > label').forEach(function(el){
+        imp(el,'grid-area','auto');
+        imp(el,'grid-column','1');
+        imp(el,'grid-row','auto');
+        imp(el,'width','100%');
+        imp(el,'max-width','100%');
+        imp(el,'min-width','0');
+        imp(el,'margin','0');
+      });
+    }
+
+    root.querySelectorAll('.entry-basic-card input,.entry-basic-card select,.entry-basic-card .time-display').forEach(function(el){
+      imp(el,'width','100%');
+      imp(el,'max-width','100%');
+      imp(el,'min-width','0');
+      imp(el,'box-sizing','border-box');
+    });
+
+    root.querySelectorAll('.entry-basic-card .quick.time-row').forEach(function(row){
+      imp(row,'display','grid');
+      imp(row,'grid-template-columns','minmax(0,1fr) 84px');
+      imp(row,'gap','8px');
+      imp(row,'width','100%');
+      imp(row,'max-width','100%');
+      imp(row,'min-width','0');
+
+      var picker=row.querySelector('.time-picker');
+      if(picker){
+        imp(picker,'width','100%');
+        imp(picker,'max-width','100%');
+        imp(picker,'min-width','0');
+      }
+      var disp=row.querySelector('.time-display');
+      if(disp){
+        imp(disp,'display','flex');
+        imp(disp,'align-items','center');
+        imp(disp,'justify-content','flex-start');
+        imp(disp,'gap','10px');
+        imp(disp,'width','100%');
+        imp(disp,'max-width','100%');
+        imp(disp,'min-width','0');
+        imp(disp,'padding','0 14px 0 46px');
+      }
+      var btn=row.querySelector(':scope > button.secondary');
+      if(btn){
+        imp(btn,'width','84px');
+        imp(btn,'min-width','84px');
+        imp(btn,'max-width','84px');
+        imp(btn,'min-height','50px');
+      }
+    });
+
+    var badge=document.getElementById('iphoneVersionProofV017');
+    if(badge){
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.46</span>';
+      imp(badge,'color','#fff');
+      badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',stabilize);
+  }else{
+    stabilize();
+  }
+  window.addEventListener('load',stabilize);
+  window.addEventListener('resize',stabilize);
+  setTimeout(stabilize,100);
+  setTimeout(stabilize,500);
+  setTimeout(stabilize,1500);
+})();
+</script>
+
+<script id="hera-cloud-sync-v2">
+(function(){
+  'use strict';
+
+  var API='/api/sync';
+  var KEY_NAME='hera_cloud_sync_key_v2';
+  var DEVICE_NAME='hera_cloud_device_v2';
+  var META_KEY='hera_cloud_record_meta_v2';
+  var USER_KEY='hera_v02_user_records';
+  var OVER_KEY='hera_v02_overrides';
+
+  function jget(k,d){
+    try{
+      var raw=localStorage.getItem(k);
+      return raw ? JSON.parse(raw) : d;
+    }catch(_e){ return d; }
+  }
+  function jset(k,v){
+    try{ localStorage.setItem(k,JSON.stringify(v)); return true; }
+    catch(_e){ return false; }
+  }
+  function isoNow(){ return new Date().toISOString(); }
+  function hashObj(v){
+    try{
+      var s=JSON.stringify(v);
+      var h=2166136261;
+      for(var i=0;i<s.length;i++){
+        h^=s.charCodeAt(i);
+        h=Math.imul(h,16777619);
+      }
+      return (h>>>0).toString(36);
+    }catch(_e){ return ''; }
+  }
+  function device(){
+    var d=localStorage.getItem(DEVICE_NAME);
+    if(!d){
+      d=(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'iphone':'pc')+'-'+Math.random().toString(36).slice(2,8);
+      localStorage.setItem(DEVICE_NAME,d);
+    }
+    return d;
+  }
+  function syncKey(interactive){
+    var k=(localStorage.getItem(KEY_NAME)||'').trim();
+    if(!k && interactive){
+      k=(prompt('PC・iPhone同期キーを入力してください。\\n最初の1回だけ入力します。')||'').trim();
+      if(k) localStorage.setItem(KEY_NAME,k);
+    }
+    return k;
+  }
+  async function request(method,body,interactive){
+    var k=syncKey(interactive);
+    if(!k) return null;
+    var r=await fetch(API,{
+      method:method,
+      headers:{'Content-Type':'application/json','X-Sync-Key':k},
+      body:body ? JSON.stringify(body) : undefined,
+      cache:'no-store',
+      credentials:'same-origin'
+    });
+    if(r.status===401){
+      localStorage.removeItem(KEY_NAME);
+      if(interactive) alert('同期キーが一致しません。もう一度入力してください。');
+      return null;
+    }
+    if(!r.ok) throw new Error('sync http '+r.status);
+    return r.json();
+  }
+
+  function stores(){
+    var user=jget(USER_KEY,[]);
+    if(!Array.isArray(user)) user=[];
+    var over=jget(OVER_KEY,{});
+    if(!over || typeof over!=='object' || Array.isArray(over)) over={};
+    return {user:user,over:over};
+  }
+  function saveStores(s){
+    jset(USER_KEY,s.user);
+    jset(OVER_KEY,s.over);
+  }
+  function allLocal(){
+    var s=stores(), m=new Map();
+    s.user.forEach(function(r){
+      if(r && r.id!=null) m.set(String(r.id),r);
+    });
+    Object.keys(s.over).forEach(function(id){
+      var r=s.over[id];
+      if(r && r.id!=null) m.set(String(r.id),r);
+    });
+    return m;
+  }
+  function meta(){ return jget(META_KEY,{}); }
+  function saveMeta(m){ jset(META_KEY,m); }
+
+  function applyRemote(rows){
+    var s=stores(), m=meta(), userMap=new Map();
+    s.user.forEach(function(r){ if(r&&r.id!=null) userMap.set(String(r.id),r); });
+    var changed=false;
+
+    (Array.isArray(rows)?rows:[]).forEach(function(row){
+      if(!row || row.record_id==null) return;
+      var id=String(row.record_id);
+      var remoteTs=Date.parse(row.updated_at||0)||0;
+      var lm=m[id]||null;
+      var localTs=lm ? (Date.parse(lm.updated_at||0)||0) : 0;
+
+      /* Preserve a newer local dirty edit; otherwise remote wins. */
+      if(lm && lm.dirty && localTs>remoteTs) return;
+
+      if(row.deleted_at){
+        if(id.indexOf('u:')===0){
+          if(userMap.delete(id)) changed=true;
+        }else if(Object.prototype.hasOwnProperty.call(s.over,id)){
+          delete s.over[id];
+          changed=true;
+        }
+        m[id]={hash:'',updated_at:row.updated_at||isoNow(),dirty:false,deleted:true};
+        return;
+      }
+
+      if(!row.payload) return;
+      var incoming=row.payload;
+      var h=hashObj(incoming);
+
+      if(id.indexOf('u:')===0){
+        var prev=userMap.get(id);
+        if(hashObj(prev)!==h){
+          userMap.set(id,incoming);
+          changed=true;
+        }
+      }else{
+        if(hashObj(s.over[id])!==h){
+          s.over[id]=incoming;
+          changed=true;
+        }
+      }
+      m[id]={hash:h,updated_at:row.updated_at||isoNow(),dirty:false,deleted:false};
+    });
+
+    if(changed){
+      s.user=Array.from(userMap.values());
+      saveStores(s);
+      try{ if(typeof refresh==='function') refresh(); }catch(_e){}
+    }
+    saveMeta(m);
+    return changed;
+  }
+
+  function scanLocal(markInitialDirty){
+    var local=allLocal();
+    var m=meta();
+    var now=isoNow();
+
+    local.forEach(function(rec,id){
+      var h=hashObj(rec);
+      var x=m[id];
+      if(!x){
+        m[id]={hash:h,updated_at:now,dirty:!!markInitialDirty,deleted:false};
+      }else if(x.deleted || x.hash!==h){
+        m[id]={hash:h,updated_at:now,dirty:true,deleted:false};
+      }
+    });
+
+    Object.keys(m).forEach(function(id){
+      if(!local.has(id) && !m[id].deleted){
+        m[id]={hash:'',updated_at:now,dirty:true,deleted:true};
+      }
+    });
+    saveMeta(m);
+    return {local:local,meta:m};
+  }
+
+  function dirtyRows(){
+    var scanned=scanLocal(false);
+    var rows=[];
+    Object.keys(scanned.meta).forEach(function(id){
+      var x=scanned.meta[id];
+      if(!x.dirty) return;
+      var rec=scanned.local.get(id);
+      rows.push({
+        record_id:id,
+        trip_date:rec && rec.date ? rec.date : null,
+        payload:rec || {},
+        updated_at:x.updated_at||isoNow(),
+        deleted_at:x.deleted ? (x.updated_at||isoNow()) : null,
+        source_device:device()
+      });
+    });
+    return rows;
+  }
+
+  async function pull(interactive){
+    try{
+      var rows=await request('GET',null,interactive);
+      if(rows===null) return null;
+      applyRemote(rows);
+      return rows;
+    }catch(e){
+      console.warn('hera cloud pull failed',e);
+      return null;
+    }
+  }
+
+  async function push(interactive){
+    try{
+      var rows=dirtyRows();
+      if(!rows.length) return 0;
+      var r=await request('POST',{records:rows},interactive);
+      if(!r) return 0;
+      var m=meta();
+      rows.forEach(function(row){
+        var x=m[row.record_id];
+        if(x) x.dirty=false;
+      });
+      saveMeta(m);
+      return r.upserted||0;
+    }catch(e){
+      console.warn('hera cloud push failed',e);
+      return 0;
+    }
+  }
+
+  async function syncNow(interactive){
+    var k=syncKey(interactive);
+    if(!k) return false;
+
+    /*
+      Pull first so a second device does not overwrite existing cloud data.
+      If the cloud is empty, the current device becomes the initial source.
+    */
+    var remote=await pull(interactive);
+    if(remote===null) return false;
+
+    var m=meta();
+    if(!Object.keys(m).length && (!remote || !remote.length)){
+      scanLocal(true);
+    }else{
+      scanLocal(false);
+    }
+
+    await push(interactive);
+    await pull(false);
+    return true;
+  }
+
+  window.heraCloudSync={
+    syncNow:syncNow,
+    push:push,
+    pull:pull,
+    forgetKey:function(){localStorage.removeItem(KEY_NAME);}
+  };
+
+  function hook(){
+    var form=document.getElementById('entryForm');
+    if(form && form.dataset.cloudSyncHookV2!=='1'){
+      form.dataset.cloudSyncHookV2='1';
+      form.addEventListener('submit',function(){
+        setTimeout(function(){syncNow(false);},600);
+      },true);
+    }
+  }
+
+  async function boot(){
+    hook();
+    /* Ask once per browser/device. The key is NOT embedded in public GitHub HTML. */
+    if(!syncKey(false)){
+      syncKey(true);
+    }
+    if(syncKey(false)){
+      await syncNow(false);
+      setInterval(function(){syncNow(false);},60000);
+      window.addEventListener('focus',function(){syncNow(false);});
+      window.addEventListener('online',function(){syncNow(false);});
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot,{once:true});
+  }else{
+    boot();
+  }
+  window.addEventListener('load',hook,{once:true});
+})();
+</script>
+<!-- Ver.0.46: entry layout stabilized on all test viewport widths; PC/iPhone cloud sync added. -->
+
 </body>
 <!-- Ver.1.1.160: 餌分類を新体系へ全過去データ一括変換。とろセット→トロロセット、グルダンゴ追加、過去専用分類・マッシュ統一を反映。 -->
 </html>
