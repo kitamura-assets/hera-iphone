@@ -57,7 +57,9 @@ export default async function handler(req, res) {
       }
 
       const select = 'record_id,trip_date,payload,updated_at,deleted_at,source_device';
-      const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=updated_at.asc`;
+      const limit = Math.min(Math.max(parseInt(String(req.query?.limit || '150'),10) || 150,1),250);
+      const offset = Math.max(parseInt(String(req.query?.offset || '0'),10) || 0,0);
+      const url = `${base}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=updated_at.asc&limit=${limit}&offset=${offset}`;
       const r = await fetch(url, { headers, cache:'no-store' });
       const text = await r.text();
       if (!r.ok) return res.status(r.status).json({ ok:false, error:text.slice(0,500) });
