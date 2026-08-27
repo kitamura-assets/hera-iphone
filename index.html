@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="ja" class="search-booting-v1146"><head>
 <!--
-  へらぶな釣り日誌 iPhone入力 Ver.0.45
+  へらぶな釣り日誌 iPhone入力 Ver.0.57
   Detail screen premium brown refinement.
   Previous / next diary navigation rebuilt against allData and showDetailById.
   Lower detail layout compacted; diary width and photo presentation improved.
 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#6f5240">
-<title>へらぶな釣り日誌 iPhone入力 Ver.0.45</title>
+<title>へらぶな釣り日誌 iPhone入力 Ver.0.57</title>
 <style>
 :root{--bg:#f5f7f4;--panel:#fff;--ink:#1f2a24;--muted:#68746d;--line:#dfe6e1;--accent:#2f6b4f;--accent2:#e7f1eb;--danger:#a74444;--shadow:0 8px 24px rgba(28,48,37,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic UI","Meiryo",system-ui,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}.side{background:#203b2e;color:#fff;padding:22px 14px;position:sticky;top:0;height:100vh}.brand{font-weight:800;font-size:21px;padding:4px 10px 18px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:14px}.brand small{display:block;font-size:11px;font-weight:500;opacity:.72;margin-top:5px}.nav button{width:100%;border:0;background:transparent;color:#dce8e0;text-align:left;padding:12px 13px;border-radius:9px;font-size:15px;cursor:pointer;margin:2px 0}.nav button:hover,.nav button.active{background:rgba(255,255,255,.12);color:#fff}.main{padding:28px;max-width:1550px;width:100%;min-width:0}.page{display:none}.page.active{display:block}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:20px}h1{margin:0;font-size:27px}h2{margin:0 0 14px;font-size:19px}.sub{color:var(--muted);font-size:13px;margin-top:5px}.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px}.kpis{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px;margin:18px 0}.kpi .label{font-size:12px;color:var(--muted)}.kpi .value{font-size:27px;font-weight:800;margin-top:5px}.unit{font-size:13px;font-weight:600;margin-left:4px;color:var(--muted)}.grid2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;min-width:0}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-width:0}.primary,.secondary,.danger{border:0;padding:10px 15px;border-radius:9px;cursor:pointer;font-weight:700}.primary{background:var(--accent);color:#fff}.secondary{background:#fff;color:var(--ink);border:1px solid #cbd7cf}.danger{background:var(--danger);color:#fff}.quick{display:flex;gap:10px;flex-wrap:wrap}.muted{color:var(--muted)}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent2);color:var(--accent);font-size:12px}.notice{background:#fff8ed;border:1px solid #eed6b8;color:#75502d;border-radius:11px;padding:12px 14px;font-size:13px}.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.form-grid label{font-size:12px;color:var(--muted);display:block}.form-grid label span{display:block;margin-bottom:5px}.form-grid input,.form-grid select,.form-grid textarea,.filters input,.filters select{width:100%;border:1px solid #cfd9d2;border-radius:9px;padding:10px 11px;background:#fff}.span2{grid-column:span 2}.span4{grid-column:1/-1}.filters{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}.data-table{border-collapse:collapse;width:100%;min-width:900px;font-size:13px}.data-table th{position:sticky;top:0;background:#eef4f0;color:#31493b;text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}.data-table td{padding:10px;border-bottom:1px solid #edf1ee;vertical-align:top}.data-table tr:hover td{background:#fafcfb}.zero td{background:#f1f1f1!important;color:#777}.row-card{padding:10px 0;border-bottom:1px solid #edf1ee;cursor:pointer}.row-card:last-child{border-bottom:0}.row-card:hover{background:#fafcfb}.segment{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:#fafcfb}.segment-grid{display:grid;grid-template-columns:1.4fr 1.4fr 1fr .8fr auto;gap:9px;align-items:end}.seg-remove{border:0;background:#f5e7e7;color:#8b3434;border-radius:8px;padding:9px;cursor:pointer}.calcbox{background:#eef4f0;border-radius:10px;padding:12px;display:flex;gap:22px;flex-wrap:wrap}.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.dow,.day{min-height:38px;border-radius:9px}.dow{display:grid;place-items:center;font-size:12px;color:var(--muted)}.day{border:1px solid var(--line);background:#fff;padding:7px;cursor:pointer;position:relative;min-height:90px}.day.other{opacity:.35}.day.today{outline:2px solid var(--accent)}.day .n{font-weight:700}.day .mark{position:absolute;left:7px;bottom:8px;width:8px;height:8px;border-radius:50%;background:var(--accent)}.day .cnt{position:absolute;right:7px;bottom:5px;font-size:11px;color:var(--accent);font-weight:700}.analysis-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.analysis-tabs button.active{background:var(--accent);color:#fff}.chart{position:relative;display:flex;align-items:flex-end;gap:3px;height:260px;border-bottom:1px solid var(--line);padding:15px 10px 34px;overflow:hidden;min-width:0}.barcol{flex:1 1 0;min-width:0;text-align:center;font-size:11px;color:var(--muted);overflow:visible}.barcol i{display:block;background:var(--accent);border-radius:5px 5px 0 0;min-height:2px;margin:0 auto 6px;width:min(28px,70%)}.barcol>div{white-space:nowrap;overflow:visible}.chart-axis-x{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em}.chart-axis-y{position:absolute;left:6px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left top;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em;white-space:nowrap}.place-row{padding:12px 0;border-bottom:1px solid #edf1ee;display:flex;justify-content:space-between;gap:12px;align-items:center}.map-box{height:380px;border:2px dashed #b9c9bf;border-radius:14px;background:linear-gradient(135deg,#f1f6f3,#e8f0eb);display:grid;place-items:center;text-align:center;color:#557063;padding:30px;overflow:hidden;position:relative}.map-img{max-width:100%;max-height:100%;object-fit:contain}.photo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.photo{position:relative;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f4f4f4}.photo img{width:100%;height:100px;object-fit:cover;display:block;cursor:pointer}.photo button{position:absolute;right:4px;top:4px;border:0;border-radius:50%;width:25px;height:25px;background:rgba(0,0,0,.65);color:white;cursor:pointer}.detail{position:fixed;inset:0;background:rgba(15,25,20,.38);display:none;align-items:center;justify-content:center;padding:24px;z-index:20}.detail.show{display:flex}.detail-card{background:#fff;border-radius:16px;max-width:960px;width:100%;max-height:90vh;overflow:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2)}.close{float:right;border:0;background:#eef2ef;border-radius:8px;padding:7px 10px;cursor:pointer}.detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.detail-item{background:#f7f9f7;border-radius:10px;padding:10px}.detail-item b{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.modal-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.trash-note{font-size:12px;color:var(--muted)}
@@ -9911,7 +9911,7 @@ html.iphone-entry-v001 #search{
 
 
 <style id="iphone-version-badge-v056">
-/* Ver.0.56: compact, non-interactive version badge away from edit controls */
+/* Ver.0.57: compact, non-interactive version badge away from edit controls */
 html.iphone-entry-v001 .iphone-version-badge,
 html.iphone-entry-v001 #iphoneVersionBadge,
 html.iphone-entry-v001 [class*="version-badge"],
@@ -47456,7 +47456,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       imp(badge,'color','#fff'); imp(badge,'background','#42291d');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -47531,7 +47531,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     var mapBtn=root.querySelector('.entry-basic-card .map-pick-btn'); if(mapBtn){ imp(mapBtn,'height','46px'); imp(mapBtn,'min-height','46px'); }
     var weatherBtn=root.querySelector('.entry-basic-card .weather-field .quick>.secondary'); if(weatherBtn){ imp(weatherBtn,'height','46px'); imp(weatherBtn,'min-height','46px'); }
     var badge=document.getElementById('iphoneVersionProofV017');
-    if(badge){ badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>'; imp(badge,'color','#fff'); badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');}); }
+    if(badge){ badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>'; imp(badge,'color','#fff'); badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');}); }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',polish); else polish();
   window.addEventListener('load',polish); window.addEventListener('resize',polish);
@@ -47621,7 +47621,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     root.querySelectorAll('.entry-basic-card .time-display').forEach(function(x){imp(x,'justify-content','flex-start');imp(x,'text-align','left');imp(x,'padding','0 14px 0 48px');imp(x,'border-radius','12px');imp(x,'height','50px');imp(x,'min-height','50px');});
     root.querySelectorAll('.entry-basic-card input,.entry-basic-card select,.entry-basic-card button.secondary').forEach(function(x){imp(x,'border-radius','12px');});
     var badge=document.getElementById('iphoneVersionProofV017');
-    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
+    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
   window.addEventListener('load',apply);window.addEventListener('resize',apply);setTimeout(apply,150);setTimeout(apply,700);
@@ -47815,7 +47815,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       imp(c,'height','50px');imp(c,'min-height','50px');imp(c,'border-radius','12px');imp(c,'padding','0 54px 0 14px');imp(c,'box-sizing','border-box');
     });
     var badge=document.getElementById('iphoneVersionProofV017');
-    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
+    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
   window.addEventListener('load',apply);window.addEventListener('resize',apply);setTimeout(apply,150);setTimeout(apply,700);setTimeout(apply,1500);
@@ -48042,7 +48042,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     root.querySelectorAll('.entry-fishing-card .segment-grid>*').forEach(function(x){imp(x,'grid-column','1');imp(x,'width','100%');imp(x,'max-width','100%');imp(x,'min-width','0');imp(x,'box-sizing','border-box');imp(x,'margin','0');});
     root.querySelectorAll('.entry-weigh-card .entry-weigh-input input').forEach(function(x){imp(x,'padding','0 54px 0 14px');imp(x,'text-align','left');});
     var badge=document.getElementById('iphoneVersionProofV017');
-    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
+    if(badge){badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';imp(badge,'color','#fff');badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
   window.addEventListener('load',apply);window.addEventListener('resize',apply);
@@ -48142,7 +48142,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function run(){
     if(innerWidth>700)return;
     var b=document.getElementById('iphoneVersionProofV017');
-    if(b){b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';b.style.setProperty('color','#fff','important');b.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important')});}
+    if(b){b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';b.style.setProperty('color','#fff','important');b.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important')});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   addEventListener('load',run);setTimeout(run,500);
@@ -48274,7 +48274,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function run(){
     if(innerWidth>700)return;
     var b=document.getElementById('iphoneVersionProofV017');
-    if(b){b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';b.style.setProperty('color','#fff','important');b.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important')});}
+    if(b){b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';b.style.setProperty('color','#fff','important');b.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important')});}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   addEventListener('load',run);setTimeout(run,400);
@@ -48637,7 +48637,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     /* バージョン表示 */
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important');});
     }
@@ -48804,7 +48804,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function refresh(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important');});
     }
@@ -49215,7 +49215,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function badge(){
     var b=document.getElementById('iphoneVersionProofV017');
     if(b){
-      b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       b.style.setProperty('color','#fff','important');
       b.querySelectorAll('*').forEach(function(x){x.style.setProperty('color','#fff','important')});
     }
@@ -49299,7 +49299,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     /* バージョン表示 */
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -49775,7 +49775,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function version(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -49823,7 +49823,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -49877,7 +49877,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -49941,7 +49941,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50012,7 +50012,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50088,7 +50088,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50178,7 +50178,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50324,7 +50324,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50400,7 +50400,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50476,7 +50476,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50513,7 +50513,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50547,7 +50547,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function apply(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50690,7 +50690,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function version(){
     const badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50878,7 +50878,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   function version(){
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.45</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       badge.style.setProperty('color','#fff','important');
       badge.querySelectorAll('*').forEach(function(x){
         x.style.setProperty('color','#fff','important');
@@ -50897,7 +50897,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.56 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.57 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51116,7 +51116,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.56</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51292,7 +51292,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       var x=m[id];
       if(!x){
         /*
-          Ver.0.56:
+          Ver.0.57:
           A record that exists locally but has no sync metadata is a NEW local record.
           It must always be uploaded, even when this device already has metadata
           for older records.
@@ -51367,7 +51367,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
     if(!k) return false;
 
     /*
-      Ver.0.56:
+      Ver.0.57:
       Scan LOCAL first. This is critical:
       - a newly-created record must become dirty before cloud pull
       - a locally-edited record must be protected from an older cloud copy
@@ -51441,7 +51441,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       form.dataset.cloudSyncHookV2='1';
       form.addEventListener('submit',function(){
         /*
-          Ver.0.56:
+          Ver.0.57:
           Save trip first, then upload both trip data and photos/assets.
           The pending flag prevents an automatic cloud pull from erasing a newly
           selected iPhone photo before it has been uploaded.
@@ -51451,7 +51451,10 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
         setTimeout(async function(){
           try{
             if(window.heraAssetSyncV052){
-              var r=await window.heraAssetSyncV052.pushAll(false);
+              var iphone=/iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth<=820;
+              var r=iphone && typeof window.heraAssetSyncV052.pushPhotosOnly==='function'
+                ? await window.heraAssetSyncV052.pushPhotosOnly(false)
+                : await window.heraAssetSyncV052.pushAll(false);
               if(r!==null){
                 try{ localStorage.removeItem('hera_asset_local_pending_v056'); }catch(_e){}
                 await window.heraAssetSyncV052.pullAll(false);
@@ -51466,7 +51469,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.56:
+      Ver.0.57:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51486,7 +51489,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.56: trip data + photos + maps + pins cloud sync enabled. -->
+<!-- Ver.0.57: trip data + photos + maps + pins cloud sync enabled. -->
 
 
 <div id="iphoneMiniNavV050" aria-label="iPhone画面切替">
@@ -51590,6 +51593,29 @@ window.heraIPhonePageV050=function(page){
 
   function enc(s){ return encodeURIComponent(String(s||'')); }
 
+  async function localPhotoRows(){
+    var rows=[];
+    var now=new Date().toISOString();
+    var dev=device();
+    var photos=await allPhotoRows();
+    photos.forEach(function(p,i){
+      if(!p || !p.key) return;
+      rows.push({
+        asset_key:'trip_photo:'+String(p.key),
+        asset_type:'trip_photo',
+        record_id:p.recordId||null,
+        place:null,
+        sort_order:Number.isFinite(+p.order)?+p.order:i,
+        payload:{name:p.name||''},
+        data:p.data||null,
+        updated_at:now,
+        deleted_at:null,
+        source_device:dev
+      });
+    });
+    return rows;
+  }
+
   async function localAssetRows(){
     var rows=[];
     var now=new Date().toISOString();
@@ -51663,17 +51689,26 @@ window.heraIPhonePageV050=function(page){
     return out;
   }
 
-  async function pushAll(interactive,onProgress){
-    var rows=await localAssetRows();
+  async function pushRows(rows,interactive,onProgress,label){
     var chunks=chunkRows(rows,1200000);
     var sent=0;
     for(var i=0;i<chunks.length;i++){
-      if(onProgress) onProgress('写真・マップ送信中 '+(i+1)+'/'+chunks.length);
+      if(onProgress) onProgress((label||'送信中')+' '+(i+1)+'/'+chunks.length);
       var r=await req('POST',{records:chunks[i]},interactive && i===0);
       if(r===null) return null;
       sent += r.upserted||chunks[i].length;
     }
     return {count:sent,total:rows.length};
+  }
+
+  async function pushPhotosOnly(interactive,onProgress){
+    var rows=await localPhotoRows();
+    return await pushRows(rows,interactive,onProgress,'写真送信中');
+  }
+
+  async function pushAll(interactive,onProgress){
+    var rows=await localAssetRows();
+    return await pushRows(rows,interactive,onProgress,'写真・マップ送信中');
   }
 
   async function replacePhotoDB(photoRows){
@@ -51735,6 +51770,7 @@ window.heraIPhonePageV050=function(page){
 
   window.heraAssetSyncV052={
     pushAll:pushAll,
+    pushPhotosOnly:pushPhotosOnly,
     pullAll:pullAll
   };
 })();
@@ -51809,18 +51845,16 @@ window.heraIPhoneCloudPullV051=async function(){
 
     if(isIPhoneLike()){
       /*
-        Normal iPhone use is download-first.
-        But immediately after an iPhone save/photo selection, upload local assets
-        BEFORE pulling, otherwise a cloud pull can replace the local photo store.
+        Ver.0.57:
+        Always upload iPhone TRIP PHOTOS before pulling cloud assets.
+        Only photos are uploaded here, so stale iPhone maps/pins cannot overwrite PC maps.
+        This also rescues photos created on older versions (0.55/0.56) that never reached cloud.
       */
-      if(pending){
-        var up=await window.heraAssetSyncV052.pushAll(false);
-        if(up!==null){
-          try{ localStorage.removeItem(PENDING); }catch(_e){}
-        }else{
-          return;
-        }
+      if(typeof window.heraAssetSyncV052.pushPhotosOnly==='function'){
+        var up=await window.heraAssetSyncV052.pushPhotosOnly(false);
+        if(up===null) return;
       }
+      try{ localStorage.removeItem(PENDING); }catch(_e){}
       await window.heraAssetSyncV052.pullAll(false);
     }else{
       /*
@@ -51886,7 +51920,7 @@ window.heraIPhoneCloudPullV051=async function(){
       return /^iPhone版\s*Ver\.0\.\d+$/i.test(t) || /^Ver\.0\.\d+$/i.test(t);
     });
     candidates.forEach(function(el){
-      el.textContent='iPhone版 Ver.0.56';
+      el.textContent='iPhone版 Ver.0.57';
       el.classList.add('iphone-version-badge');
     });
   }
@@ -51897,6 +51931,27 @@ window.heraIPhoneCloudPullV051=async function(){
   }
   window.addEventListener('load',function(){ setTimeout(fixVersionBadge,50); });
   setTimeout(fixVersionBadge,300);
+})();
+</script>
+
+
+<script id="iphone-version-hard-fix-v057">
+(function(){
+  function forceLatest(){
+    var b=document.getElementById('iphoneVersionProofV017');
+    if(b){
+      b.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.57</span>';
+    }
+    document.querySelectorAll('.iphone-version-badge,#iphoneVersionBadge,[class*="version-badge"],[class*="iphone-version"]').forEach(function(el){
+      if(/iPhone版|Ver\.0\./i.test(el.textContent||'')){
+        el.textContent='iPhone版 Ver.0.57';
+      }
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',forceLatest);
+  else forceLatest();
+  window.addEventListener('load',forceLatest);
+  [50,200,700,1700,3000].forEach(function(ms){setTimeout(forceLatest,ms)});
 })();
 </script>
 
