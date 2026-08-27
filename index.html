@@ -10176,7 +10176,7 @@ html.iphone-entry-v001 #search{
 </div>
 </div><div id="backupNotice" class="notice" style="display:none;margin-bottom:14px">月末です。念のためバックアップを書き出しておくことをおすすめします。</div><div class="grid3"><div class="card settings-card-backup"><h2>バックアップ</h2><p class="muted">釣行データ・写真・釣り場マップ・ピン・ホーム用写真までまとめてJSONに保存します。</p><button class="primary" onclick="exportBackup()">バックアップを書き出す</button></div><div class="card settings-card-restore"><h2>復元</h2><p class="muted">バックアップ内容を事前検証し、写真を含む全データを復元します。失敗時は元の状態へ戻します。</p><input id="restoreFile" type="file" accept="application/json"><label for="restoreFile" class="v11117-restore-zone" id="restoreChooserV11117" tabindex="0"><span class="v11117-restore-icon">＋</span><span class="v11117-restore-title">バックアップファイルを選択</span><span class="v11117-restore-sub">クリックしてJSONファイルを選択、またはここへドラッグ＆ドロップ</span><span class="v11117-restore-name" id="restoreFilenameV11117"></span></label><button id="restoreBtn" class="secondary" onclick="restoreBackup()" disabled>復元する</button></div><div class="card settings-card-cloudsync">
 <h2>PC・iPhone同期</h2>
-<p class="muted">復元した釣行データをSupabaseへ送ります。初回だけ同期キーを入力します。</p>
+<p class="muted">釣行データ・写真・釣り場マップ・ピンをSupabaseと同期します。初回だけ同期キーを入力します。</p>
 <button class="primary" type="button" onclick="heraInitialCloudSyncV049()">今すぐ同期する</button>
 <div id="heraCloudSyncStatusV049" class="muted" style="margin-top:10px"></div>
 </div><div class="card settings-card-delete"><h2>データ全削除</h2><p class="muted">Excelから読み込んだ元データは残し、追加・編集・設定を消します。</p><div class="settings-danger-note">この操作は元に戻せません。</div><button class="danger" onclick="deleteAllUserData()">ユーザーデータを全削除</button></div></div></section>
@@ -50863,7 +50863,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
      手動変更後は自動追従しない。保存済み編集データは変更しない。 -->
 
 
-<!-- ===== iPhone Ver.0.51 : layout stabilization + Vercel/Supabase sync ===== -->
+<!-- ===== iPhone Ver.0.52 : layout stabilization + Vercel/Supabase sync ===== -->
 <style id="iphone-v046-final-layout">
 /*
   This is the dedicated iPhone app, so keep the mobile entry layout stable
@@ -51082,7 +51082,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var badge=document.getElementById('iphoneVersionProofV017');
     if(badge){
-      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.51</span>';
+      badge.innerHTML='<span class="ivp-label">iPhone版</span><span>Ver.0.52</span>';
       imp(badge,'color','#fff');
       badge.querySelectorAll('*').forEach(function(x){imp(x,'color','#fff');});
     }
@@ -51357,7 +51357,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.heraInitialCloudSyncV049=async function(){
     var el=document.getElementById('heraCloudSyncStatusV049');
     try{
-      if(el) el.textContent='同期準備中…';
+      if(el) el.textContent='釣行データ同期中…';
       var k=syncKey(false);
       if(!k){
         k=(prompt('PC・iPhone同期キーを入力してください。\\n最初の1回だけ入力します。')||'').trim();
@@ -51368,7 +51368,6 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
         localStorage.setItem(KEY_NAME,k);
       }
 
-      /* Initial seed: rebuild metadata so every current local record is sent. */
       localStorage.removeItem(META_KEY);
       var remote=await pull(true);
       if(remote===null){
@@ -51378,15 +51377,22 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       scanLocal(true);
       var count=await push(true);
       await pull(false);
-      if(el) el.textContent='同期完了：'+count+'件を送信しました。';
-      alert('PC・iPhone同期が完了しました。\\nSupabaseの fishing_trips を更新してください。');
+
+      var ac={count:0,total:0};
+      if(window.heraAssetSyncV052){
+        ac=await window.heraAssetSyncV052.pushAll(true,function(msg){
+          if(el) el.textContent=msg;
+        }) || ac;
+      }
+
+      if(el) el.textContent='同期完了：釣行 '+count+'件 / 写真・マップ '+(ac.count||0)+'件';
+      alert('PC・iPhone同期が完了しました。\\n釣行データと写真・マップをSupabaseへ送信しました。');
     }catch(e){
       console.warn(e);
       if(el) el.textContent='同期エラー：'+(e && e.message ? e.message : e);
       alert('同期でエラーが発生しました。');
     }
   };
-
   function hook(){
     var form=document.getElementById('entryForm');
     if(form && form.dataset.cloudSyncHookV2!=='1'){
@@ -51400,7 +51406,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   async function boot(){
     hook();
     /*
-      Ver.0.51:
+      Ver.0.52:
       Do not prompt for the sync key automatically on page load.
       This prevents the sync dialog from blocking Settings/Restore.
     */
@@ -51420,7 +51426,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   window.addEventListener('load',hook,{once:true});
 })();
 </script>
-<!-- Ver.0.51: entry layout stabilized; startup sync prompt disabled so Settings/Restore stays accessible. -->
+<!-- Ver.0.52: trip data + photos + maps + pins cloud sync enabled. -->
 
 
 <div id="iphoneMiniNavV050" aria-label="iPhone画面切替">
@@ -51452,6 +51458,228 @@ window.heraIPhonePageV050=function(page){
 </script>
 
 
+
+<script id="hera-assets-sync-v052">
+(function(){
+  'use strict';
+
+  var API='/api/sync?scope=assets';
+  var KEY_NAME='hera_cloud_sync_key_v2';
+  var DEVICE_NAME='hera_cloud_device_v2';
+
+  function jget(k,d){
+    try{
+      var raw=localStorage.getItem(k);
+      return raw ? JSON.parse(raw) : d;
+    }catch(_e){ return d; }
+  }
+  function jset(k,v){
+    try{ localStorage.setItem(k,JSON.stringify(v)); return true; }
+    catch(_e){ return false; }
+  }
+  function device(){
+    var d=localStorage.getItem(DEVICE_NAME);
+    if(!d){
+      d=(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'iphone':'pc')+'-'+Math.random().toString(36).slice(2,8);
+      localStorage.setItem(DEVICE_NAME,d);
+    }
+    return d;
+  }
+  function syncKey(interactive){
+    var k=(localStorage.getItem(KEY_NAME)||'').trim();
+    if(!k && interactive){
+      k=(prompt('PC・iPhone同期キーを入力してください。\\n最初の1回だけ入力します。')||'').trim();
+      if(k) localStorage.setItem(KEY_NAME,k);
+    }
+    return k;
+  }
+  async function req(method,body,interactive){
+    var k=syncKey(interactive);
+    if(!k) return null;
+    var r=await fetch(API,{
+      method:method,
+      headers:{'Content-Type':'application/json','X-Sync-Key':k},
+      body:body ? JSON.stringify(body) : undefined,
+      cache:'no-store',
+      credentials:'same-origin'
+    });
+    if(r.status===401){
+      localStorage.removeItem(KEY_NAME);
+      if(interactive) alert('同期キーが一致しません。');
+      return null;
+    }
+    if(!r.ok){
+      var t='';
+      try{ t=await r.text(); }catch(_e){}
+      throw new Error('asset sync http '+r.status+' '+t.slice(0,160));
+    }
+    return r.json();
+  }
+
+  async function allPhotoRows(){
+    try{
+      var db=await photoDB();
+      return await new Promise(function(res,rej){
+        var tx=db.transaction('photos','readonly');
+        var q=tx.objectStore('photos').getAll();
+        q.onsuccess=function(){res(q.result||[])};
+        q.onerror=function(){rej(q.error)};
+      });
+    }catch(_e){ return []; }
+  }
+
+  function enc(s){ return encodeURIComponent(String(s||'')); }
+
+  async function localAssetRows(){
+    var rows=[];
+    var now=new Date().toISOString();
+    var dev=device();
+
+    var maps=jget('hera_v02_maps',{});
+    Object.keys(maps||{}).forEach(function(place){
+      rows.push({
+        asset_key:'map:'+enc(place), asset_type:'map', record_id:null, place:place,
+        sort_order:null, payload:null, data:maps[place], updated_at:now,
+        deleted_at:null, source_device:dev
+      });
+    });
+
+    var pins=jget('hera_v06_map_pins',{});
+    Object.keys(pins||{}).forEach(function(place){
+      rows.push({
+        asset_key:'pins:'+enc(place), asset_type:'pins', record_id:null, place:place,
+        sort_order:null, payload:pins[place], data:null, updated_at:now,
+        deleted_at:null, source_device:dev
+      });
+    });
+
+    var loc=jget('hera_v07_place_locations',{});
+    Object.keys(loc||{}).forEach(function(place){
+      rows.push({
+        asset_key:'location:'+enc(place), asset_type:'location', record_id:null, place:place,
+        sort_order:null, payload:loc[place], data:null, updated_at:now,
+        deleted_at:null, source_device:dev
+      });
+    });
+
+    var pp=jget('hera_v08_place_photos',{});
+    Object.keys(pp||{}).forEach(function(place){
+      rows.push({
+        asset_key:'place_photo:'+enc(place), asset_type:'place_photo', record_id:null, place:place,
+        sort_order:null, payload:null, data:pp[place], updated_at:now,
+        deleted_at:null, source_device:dev
+      });
+    });
+
+    var photos=await allPhotoRows();
+    photos.forEach(function(p,i){
+      if(!p || !p.key) return;
+      rows.push({
+        asset_key:'trip_photo:'+String(p.key),
+        asset_type:'trip_photo',
+        record_id:p.recordId||null,
+        place:null,
+        sort_order:Number.isFinite(+p.order)?+p.order:i,
+        payload:{name:p.name||''},
+        data:p.data||null,
+        updated_at:now,
+        deleted_at:null,
+        source_device:dev
+      });
+    });
+    return rows;
+  }
+
+  function chunkRows(rows,maxBytes){
+    var out=[], cur=[], size=0;
+    rows.forEach(function(row){
+      var n=JSON.stringify(row).length+32;
+      if(cur.length && size+n>maxBytes){
+        out.push(cur); cur=[]; size=0;
+      }
+      cur.push(row); size+=n;
+    });
+    if(cur.length) out.push(cur);
+    return out;
+  }
+
+  async function pushAll(interactive,onProgress){
+    var rows=await localAssetRows();
+    var chunks=chunkRows(rows,1200000);
+    var sent=0;
+    for(var i=0;i<chunks.length;i++){
+      if(onProgress) onProgress('写真・マップ送信中 '+(i+1)+'/'+chunks.length);
+      var r=await req('POST',{records:chunks[i]},interactive && i===0);
+      if(r===null) return null;
+      sent += r.upserted||chunks[i].length;
+    }
+    return {count:sent,total:rows.length};
+  }
+
+  async function replacePhotoDB(photoRows){
+    try{
+      var db=await photoDB();
+      await new Promise(function(res,rej){
+        var tx=db.transaction('photos','readwrite');
+        var st=tx.objectStore('photos');
+        st.clear();
+        photoRows.forEach(function(row){
+          var key=String(row.asset_key||'').replace(/^trip_photo:/,'');
+          st.put({
+            key:key,
+            recordId:row.record_id||'',
+            order:Number.isFinite(+row.sort_order)?+row.sort_order:0,
+            data:row.data||'',
+            name:(row.payload&&row.payload.name)||''
+          });
+        });
+        tx.oncomplete=res;
+        tx.onerror=function(){rej(tx.error)};
+      });
+    }catch(e){ console.warn('photo restore failed',e); }
+  }
+
+  async function applyRemote(rows){
+    rows=Array.isArray(rows)?rows:[];
+    var maps={},pins={},loc={},pp={},photos=[];
+    rows.forEach(function(r){
+      if(!r || r.deleted_at) return;
+      if(r.asset_type==='map' && r.place) maps[r.place]=r.data||'';
+      else if(r.asset_type==='pins' && r.place) pins[r.place]=r.payload||[];
+      else if(r.asset_type==='location' && r.place) loc[r.place]=r.payload||{};
+      else if(r.asset_type==='place_photo' && r.place) pp[r.place]=r.data||'';
+      else if(r.asset_type==='trip_photo') photos.push(r);
+    });
+    jset('hera_v02_maps',maps);
+    jset('hera_v06_map_pins',pins);
+    jset('hera_v07_place_locations',loc);
+    jset('hera_v08_place_photos',pp);
+    await replacePhotoDB(photos);
+    try{ if(typeof refresh==='function') refresh(); }catch(_e){}
+    return {
+      maps:Object.keys(maps).length,
+      pins:Object.keys(pins).length,
+      locations:Object.keys(loc).length,
+      placePhotos:Object.keys(pp).length,
+      photos:photos.length
+    };
+  }
+
+  async function pullAll(interactive,onProgress){
+    if(onProgress) onProgress('写真・マップ取得中…');
+    var rows=await req('GET',null,interactive);
+    if(rows===null) return null;
+    var counts=await applyRemote(rows);
+    return {rows:rows,counts:counts};
+  }
+
+  window.heraAssetSyncV052={
+    pushAll:pushAll,
+    pullAll:pullAll
+  };
+})();
+</script>
+
 <script id="iphone-cloud-pull-v051">
 window.heraIPhoneCloudPullV051=async function(){
   try{
@@ -51463,13 +51691,25 @@ window.heraIPhoneCloudPullV051=async function(){
       if(!key) return;
       api.setKey(key);
     }
+
     var rows=await api.pull();
     if(rows===null){
       alert('同期キーが一致しません。');
       api.forgetKey();
       return;
     }
-    alert('同期しました。最新データを表示します。');
+
+    if(window.heraAssetSyncV052){
+      var ar=await window.heraAssetSyncV052.pullAll(true);
+      if(ar===null){
+        alert('写真・マップの同期に失敗しました。');
+        return;
+      }
+      var c=ar.counts||{};
+      alert('同期しました。\\n釣行データ＋写真 '+(c.photos||0)+'枚＋マップ '+(c.maps||0)+'件を取得しました。');
+    }else{
+      alert('釣行データを同期しました。');
+    }
     location.reload();
   }catch(e){
     console.warn(e);
