@@ -10882,6 +10882,12 @@ function toggleTimePicker(name,e){if(e)e.stopPropagation();let pop=document.getE
 function pickTimePart(name,part,val,e){if(e)e.stopPropagation();let picker=document.querySelector(`.time-picker[data-name="${name}"]`);if(!picker)return;if(part==='hour'){picker.dataset.draftHour=val;updateTimeSelection(name,true);return;}picker.dataset.draftMinute=val;updateTimeSelection(name,true);let h=picker.dataset.draftHour??picker.dataset.hour??'',m=picker.dataset.draftMinute??picker.dataset.minute??'';if(h===''||m==='')return;picker.dataset.hour=h;picker.dataset.minute=m;delete picker.dataset.draftHour;delete picker.dataset.draftMinute;syncTimeField(name);calcEntry();dirty=true;clearRequiredTimeError(name);if(name==='end'){window.__weatherEndFinalizedV11456=true;setTimeout(()=>{try{maybeAutoWeatherV11456()}catch(_e){}},0)}setTimeout(()=>document.getElementById(name+'Popup')?.classList.remove('show'),120)}
 document.addEventListener('click',e=>{if(!e.target.closest('.time-picker'))document.querySelectorAll('.time-popup').forEach(x=>x.classList.remove('show'))});
 /* 806 integrated final specification: small shared policies, no observers or polling. */
+const APP_VERSION='1.1.806';
+function newTripLabelV11806(){
+ const d=new Date(),day=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+ const ids=new Set(allData.filter(r=>String(r.date||'').replace(/[/.]/g,'-').slice(0,10)===day).map(r=>r.id));
+ return ids.size?'＋ 本日'+(ids.size+1)+'回目の釣行を始める':'＋ 今日の釣行を始める';
+}
 function phoneV11806(){return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)||new URLSearchParams(location.search).get('iphonePreview')==='1';}
 function specialPlaceV11806(p){return ['府中へら鮒センター','府中へらぶなセンター','椎の木湖'].includes(String(p||'').trim());}
 function specialModeV11806(){const f=document.getElementById('entryForm');return !!(f&&phoneV11806()&&!f.elements.editId.value&&specialPlaceV11806(f.elements.place.value));}
@@ -10955,6 +10961,8 @@ function paintSpecialV11806(){
  box.innerHTML='<section><h3>総枚数</h3><div class="special-number806"><strong id="specialTotalDisplay806">0</strong><span>枚</span></div><div class="special-input806"><input id="specialTotalInput806" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="総枚数" autocomplete="off"><button type="button" id="specialClear806" aria-label="総枚数をクリア">×</button></div><p class="special-help806">※ 機器に表示された最終枚数を入力してください</p></section><section><h3>リャンコ</h3><div class="special-number806"><strong id="specialRyankoDisplay806">0</strong><span>回</span></div><div class="special-buttons806"><button type="button" id="specialPlus806" aria-label="リャンコを1回追加">＋</button><button type="button" id="specialMinus806" aria-label="直近のリャンコを戻す">－</button></div><p class="special-help806">※ リャンコの回数を入力してください</p></section>';
  host.querySelector('.lv515-card-head').after(box);
  box.querySelector('input').addEventListener('input',e=>setSpecialTotalV11806(e.target.value));
+ box.querySelector('input').addEventListener('focus',e=>{if(e.target.value==='0')e.target.value='';});
+ box.querySelector('input').addEventListener('blur',e=>{if(e.target.value==='')setSpecialTotalV11806('0');});
  box.querySelector('#specialClear806').onclick=()=>{setSpecialTotalV11806('');box.querySelector('input').focus();};
  box.querySelector('#specialPlus806').onclick=()=>changeSpecialRyankoV11806(1);box.querySelector('#specialMinus806').onclick=()=>changeSpecialRyankoV11806(-1);
  }
@@ -11012,6 +11020,7 @@ function finishEditV11806(id){
  f.elements.editId.value='';window.__editPeak806=null;
 }
 function resetNewEntryStateV11806(){
+ window.__tripResume806=null;window.__newTripActive806=true;
  window.__entryGeneration806=(window.__entryGeneration806||0)+1;
  window.__entryPhotoRead806=null;
  window.clearDraftV11806?.();window.resetLiveStateV11806?.();window.clearCatchEventsV11806?.();window.resetAutoVerdictsV11806?.();
@@ -11023,8 +11032,8 @@ function resetNewEntryStateV11806(){
  for(const e of f.elements){if(['button','submit','reset'].includes(e.type))continue;if(e.type==='file'){e.value='';continue;}e.value='';if(e.type==='checkbox'||e.type==='radio')e.checked=false;}
  const d=new Date();f.elements.date.value=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
  f.elements.specialRyanko806.value='[]';if(f.elements.catchTimesJson)f.elements.catchTimesJson.value='[]';
- setEntryTime('start','');setEntryTime('end','');addSegment({method:'',bait:'',rod:'',rodName:'',tanaStart:'',tanaEnd:'',count:0,start:'',end:''});
- for(const e of document.querySelectorAll('#segments input,#segments select')){if(e.classList.contains('seg-count'))e.value='0';else e.value='';}
+ setEntryTime('start','');setEntryTime('end','');addSegment({method:'深宙',bait:'両ダンゴ',rod:'',rodName:'',tanaStart:'',tanaEnd:'',count:0,start:'',end:''});
+ for(const e of document.querySelectorAll('#segments input,#segments select')){if(e.classList.contains('seg-count'))e.value='0';else if(e.classList.contains('seg-method'))e.value='深宙';else if(e.classList.contains('seg-bait'))e.value='両ダンゴ';else e.value='';}
  const confirm=document.getElementById('entryConfirmV581');if(confirm){delete confirm.dataset.savingV11790;const b=confirm.querySelector('.ec581-save');if(b){b.disabled=false;b.textContent='この内容で保存';}}
  document.getElementById('v587SaveFinishOverlay')?.classList.remove('show');
  // Form reset handlers can be bypassed by older wrappers. Reset progression at the new-trip boundary.
@@ -65974,7 +65983,7 @@ html.v619-home-open #iphoneMiniNavV050{
         <div class="ih619-metric"><span>開始時刻</span><b id="ih619Start">--:--</b></div>
       </div>
 
-      <button type="button" class="ih619-main-btn" id="ih619MainBtn">＋ 今日の釣行を始める</button>
+      <button type="button" class="ih619-main-btn" id="ih619MainBtn">＋ 新しい釣行を始める</button>
     </section>
 
     <section class="ih619-section">
@@ -66140,7 +66149,7 @@ html.v619-home-open #iphoneMiniNavV050{
       if(elapsedEl)elapsedEl.textContent=elapsed(st.startedAt);
       if(countEl)countEl.textContent=String(liveCount());
       if(startEl)startEl.textContent=st.startedAt||'--:--';
-      if(btn)btn.textContent='記録を続ける　›';
+      if(btn)btn.textContent=newTripLabelV11806();
     }else{
       /* Ver.1.1.790:
          元のホーム描画が30秒タイマー等で後から走っても、
@@ -66158,7 +66167,7 @@ html.v619-home-open #iphoneMiniNavV050{
         if(elapsedEl)elapsedEl.textContent='--';
         if(countEl)countEl.textContent='0';
         if(startEl)startEl.textContent='--:--';
-        if(btn)btn.textContent='＋ 今日の釣行を始める';
+        if(btn)btn.textContent=newTripLabelV11806();
       }
     }
 
@@ -67153,7 +67162,7 @@ html.v619-iphone-ui #iphoneHomeB619{
     if(place && !(st&&st.running))place.textContent='今日の釣行を始められます';
 
     const btn=document.getElementById('ih619MainBtn');
-    if(btn && !(st&&st.running))btn.textContent='＋ 今日の釣行を始める';
+    if(btn && !(st&&st.running))btn.textContent=newTripLabelV11806();
 
     const send=document.getElementById('ih619Send');
     if(send && !send.querySelector('.ih635-action-icon')) send.textContent='☁ 当日分をPCへ送る';
@@ -67379,7 +67388,7 @@ window.heraLiveBackToMainV624=function(){
     if(elapsed)elapsed.textContent=duration(r.start,r.end);
     if(count)count.textContent=String(Number(r.count)||0);
     if(end)end.textContent=tx(r.end)||'--:--';
-    if(btn)btn.textContent='＋ 新しい釣行を始める';
+    if(btn)btn.textContent=newTripLabelV11806();
     return true;
   }
 
@@ -67599,7 +67608,7 @@ window.heraLiveBackToMainV624=function(){
       const d=new Date();
       timeEl.textContent=pad(d.getHours())+':'+pad(d.getMinutes());
     }
-    if(btn)btn.textContent='記録を続ける　›';
+    if(btn)btn.textContent=newTripLabelV11806();
     return true;
   }
 
@@ -70611,7 +70620,7 @@ html.entry-confirm-open-v581 #iphoneHomeB619{
     if(elapsed)elapsed.textContent=duration(lastFinished.start,lastFinished.end);
     if(count)count.textContent=String(Number(lastFinished.count)||0);
     if(time)time.textContent=tx(lastFinished.end)||'--:--';
-    if(btn)btn.textContent='＋ 新しい釣行を始める';
+    if(btn)btn.textContent=newTripLabelV11806();
 
     return true;
   }
@@ -81580,6 +81589,7 @@ html body #entry #entryConfirmBtnV581,#settings .data-check-card-v11139,#setting
 .hourly806{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;background:#fffaf3;color:#3e2b20;}
 .hourly806 th,.hourly806 td{padding:9px 12px;border-bottom:1px solid #ddd0bb;text-align:left;}
 .hourly806 th{background:#583c28;color:#fff;}
+html.app-phone803 .hourly806 thead th{color:#fffaf0!important;-webkit-text-fill-color:#fffaf0!important;}
 #optionalSave806{position:fixed;inset:0;z-index:2147483647;background:#20170fac;display:flex;align-items:center;justify-content:center;padding:16px;}
 #optionalSave806[hidden]{display:none!important;}
 .optional-dialog806{width:480px;max-width:100%;max-height:90dvh;overflow:auto;background:#fffaf3;color:#402d20;border-radius:18px;box-shadow:0 18px 60px #0006;}
@@ -81614,6 +81624,29 @@ html.app-phone803 #diaryNav803#diaryNav803 [data-home-nav]{color:#fff6df!importa
 #iphoneLiveV515 #specialCounter806 .special-buttons806 button{flex:1;min-width:0!important;height:46px!important;min-height:46px!important;padding:0!important;margin:0!important;background:linear-gradient(#fff8e7,#f8e9c5)!important;color:#39210d!important;border:1px solid #d68a0c!important;border-radius:10px!important;box-shadow:none!important;font-size:28px!important;font-weight:400!important;line-height:44px!important;}
 #iphoneLiveV515 #specialCounter806 .special-help806{font-size:11px!important;line-height:15px!important;color:#9a7153!important;text-align:left!important;margin:11px 0 0!important;min-height:30px;}
 #iphoneLiveV515 #specialCounter806 button:active{filter:brightness(.93);}
+#iphoneHomeB619 #homeVersion806{text-align:center;color:#9a8b79;font-size:10px;line-height:1.4;padding:16px 0 8px;}
+#iphoneHomeB619 #resumeTrip806{margin:0 0 8px;}
+#iphoneHomeB619 #resumeTrip806[hidden]{display:none!important;}
+#resumeTrip806 .resume-card806{border:1px solid #c3cec5;border-radius:17px;overflow:hidden;background:#f9faf5;}
+#resumeTrip806 .resume-head806{display:flex;gap:12px;align-items:center;padding:14px 12px;background:linear-gradient(120deg,#073b2d,#224933);color:#fffaf0!important;}
+#resumeTrip806 .resume-head806 strong{color:#fffaf0!important;font-size:21px;line-height:1.4;}
+#resumeTrip806 .resume-place806{color:#eee8ce!important;font-size:13px;margin-top:3px;}
+#resumeTrip806 .resume-icon806{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:#fff;color:#0d4935!important;font-size:28px;}
+#resumeTrip806 .resume-icon806 svg{width:34px;height:34px;}
+#resumeTrip806 .resume-icon806 svg [fill="#188e43"]{fill:#0d4935;}
+#resumeTrip806 .resume-icon806 svg [stroke="#188e43"]{stroke:#0d4935;}
+#resumeTrip806 .resume-metrics806{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+#resumeTrip806 .resume-metrics806>div{text-align:center;padding:12px 2px;border-right:1px solid #d4dbd0;}
+#resumeTrip806 .resume-metrics806>div:last-child{border:0;}
+#iphoneHomeB619 #resumeTrip806 .resume-metrics806 span{display:block;color:#68746b!important;font-size:12px;font-weight:700;margin-bottom:5px;}
+#iphoneHomeB619 #resumeTrip806 .resume-metrics806 b{color:#073b2d!important;font-size:25px;line-height:1.2;}
+#resumeTrip806 .resume-action806{padding:9px;margin:0;border:0;background:#faf9f2;}
+#iphoneHomeB619 #resumeTrip806 button{width:100%;min-height:52px;margin:0;padding:10px 8px;border:1px solid #0a4935;border-radius:14px;background:linear-gradient(#245e46,#073b2d);color:#fffaf0!important;font-size:18px;font-weight:800;}
+#iphoneHomeB619.has-resume806 #ih619Status{display:none!important;}
+.trip-back806{display:none;}
+html.app-phone803 #entry .trip-back806{display:block;width:100%;min-height:44px;margin-top:12px;border:1px solid #b99264;border-radius:12px;background:#f8edd6;color:#523a25;font-size:14px;}
+html.app-phone803 #entry #basicHomeBtnV11730,html.app-phone803 #entry #step4HomeBtnV11727{width:52px!important;min-width:52px!important;flex:0 0 52px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;padding:2px 0!important;}
+html.app-phone803 #entry #basicHomeBtnV11730 span,html.app-phone803 #entry #step4HomeBtnV11727 span{white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;font-size:10px!important;line-height:1.2!important;width:auto!important;}
 
 </style>
 <script id="release-v11806-runtime">
@@ -81637,6 +81670,62 @@ html.app-phone803 #diaryNav803#diaryNav803 [data-home-nav]{color:#fff6df!importa
  window.addEventListener('click',e=>{const b=e.target.closest?.('#entryForm button[type=submit]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();const f=document.getElementById('entryForm');if(phoneV11806())window.saveEntryFromConfirmV581();else f.onsubmit?.call(f,{target:f,preventDefault(){}});},true);
  settings();specialFieldsV11806();paintSpecialV11806();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',settings,{once:true});
+})();
+
+(function(){
+ 'use strict';
+ const add=window.addSegment;
+ window.addSegment=function(s){
+   const f=document.getElementById('entryForm'),first=!document.querySelector('#segments .segment');
+   const fresh=!f?.elements.editId.value&&s==null;
+   const r=add.call(this,fresh&&first?{method:'深宙',bait:'両ダンゴ'}:s);
+   if(fresh&&!first){const row=document.querySelector('#segments .segment:last-child');for(const cls of ['.seg-method','.seg-bait']){const e=row?.querySelector(cls);if(e){if(![...e.options].some(o=>o.value===''))e.add(new Option('',''),0);e.value='';}}}
+   return r;
+ };
+ if(!phoneV11806())return;
+ const progress=['iphone-entry-v001','iphone-live-basic-only-v522','iphone-live-basic-only-v523','iphone-live-basic-only-v524','iphone-live-fishing-only-v529','iphone-live-review-v539','iphone-live-review-step4-v570','iphone-live-step4-ready-v574','entry-confirm-open-v581','v647-live-open'];
+ const targets=['.app','#entry','#iphoneLiveV515','#entryConfirmV581'];
+ function homeParts(){
+   const home=document.getElementById('iphoneHomeB619'),body=home?.querySelector('.ih619-body');if(!body)return;
+   let footer=document.getElementById('homeVersion806');if(!footer){footer=document.createElement('div');footer.id='homeVersion806';body.appendChild(footer);}footer.textContent='Ver.'+APP_VERSION;
+   let resume=document.getElementById('resumeTrip806');if(!resume){resume=document.createElement('section');resume.id='resumeTrip806';resume.innerHTML='<div class="resume-card806"><div class="resume-head806"><span class="resume-icon806" aria-hidden="true"></span><div><strong>現在 釣行中</strong><div class="resume-place806"></div></div></div><div class="resume-metrics806"><div><span>釣行時間</span><b data-resume="duration"></b></div><div><span>釣果</span><b data-resume="count"></b></div><div><span>終了時刻</span><b data-resume="end"></b></div></div><div class="resume-action806"><button type="button">← 釣行記録へ戻る</button></div></div>';body.prepend(resume);resume.querySelector('button').onclick=resumeTrip;const icon=document.querySelector('#ih619Status .ih619-state-icon');if(icon)resume.querySelector('.resume-icon806').innerHTML=icon.innerHTML;}
+   const active=!!window.__tripResume806&&window.__newTripActive806;resume.hidden=!active;home.classList.toggle('has-resume806',active);
+   const main=document.getElementById('ih619MainBtn'),label=newTripLabelV11806();if(main&&main.textContent!==label)main.textContent=label;
+   if(active){const f=document.getElementById('entryForm'),start=f.elements.start.value,end=f.elements.end.value;
+     const fisher=document.querySelector('#ih648StableFisher svg'),icon=resume.querySelector('.resume-icon806');if(fisher&&!icon.querySelector('svg'))icon.innerHTML=fisher.outerHTML;
+     resume.querySelector('.resume-place806').textContent=(f.elements.place.value||'ー')+'　'+(f.elements.point.value||'ー');
+     const minutes=s=>{const m=String(s).match(/^(\d{1,2}):(\d{2})$/);return m?+m[1]*60+ +m[2]:null;},from=minutes(start),now=new Date(),to=minutes(end)??(now.getHours()*60+now.getMinutes());
+     const elapsed=from==null?null:(to-from+1440)%1440;
+     resume.querySelector('[data-resume=duration]').textContent=elapsed==null?'ー':Math.floor(elapsed/60)+':'+String(elapsed%60).padStart(2,'0');
+     resume.querySelector('[data-resume=count]').textContent=specialModeV11806()&&f.elements.specialTotal806.value===''?'ー':sizeTotalV11803()+'枚';
+     resume.querySelector('[data-resume=end]').textContent=end||'ー';
+   }
+ }
+ function pauseTrip(){
+   window.__tripResume806={classes:progress.filter(c=>document.documentElement.classList.contains(c)),state:window.__heraIPhoneState652,scroll:scrollY,body:document.body.getAttribute('style'),nodes:targets.map(s=>{const e=document.querySelector(s);return {s,style:e?.getAttribute('style'),classes:e?.className};})};
+   document.documentElement.classList.remove(...progress);document.documentElement.classList.add('v619-home-open');
+   document.getElementById('entry')?.classList.remove('active');document.getElementById('iphoneLiveV515')?.classList.remove('is-open');
+   const home=document.getElementById('iphoneHomeB619');home.hidden=false;home.setAttribute('aria-hidden','false');home.style.setProperty('display','flex','important');home.style.setProperty('visibility','visible','important');home.style.setProperty('pointer-events','auto','important');
+   document.body.style.setProperty('overflow','hidden','important');window.__heraIPhoneState652='home';homeParts();
+ }
+ function resumeTrip(){
+   const snap=window.__tripResume806;if(!snap)return;
+   document.documentElement.classList.remove('v619-home-open',...progress);document.documentElement.classList.add(...snap.classes);
+   const home=document.getElementById('iphoneHomeB619');home.setAttribute('aria-hidden','true');home.style.setProperty('display','none','important');
+   for(const item of snap.nodes){const e=document.querySelector(item.s);if(!e)continue;if(item.style==null)e.removeAttribute('style');else e.setAttribute('style',item.style);e.className=item.classes||'';}
+   if(snap.body==null)document.body.removeAttribute('style');else document.body.setAttribute('style',snap.body);
+   window.__heraIPhoneState652=snap.state;window.__tripResume806=null;homeParts();scrollTo(0,snap.scroll);
+ }
+ function navigation(e){
+   if(e.target.closest?.('#v587SaveFinishOverlay .v587-close-btn')){window.__newTripActive806=false;window.__tripResume806=null;homeParts();return;}
+   const home=e.target.closest?.('#basicHomeBtnV11730,#step4HomeBtnV11727,#lv515BackMainV624,#iphoneMiniNavV050 [data-page=home]');
+   if(home&&window.__newTripActive806&&!document.getElementById('entryForm').elements.editId.value){e.preventDefault();e.stopImmediatePropagation();if(!window.__tripResume806)pauseTrip();}
+ }
+ window.addEventListener('pointerup',navigation,true);window.addEventListener('click',navigation,true);
+ const oldReset=window.resetNewEntryStateV11806;window.resetNewEntryStateV11806=function(){const r=oldReset.apply(this,arguments);homeParts();return r;};
+ const oldEdit=window.editRecord;window.editRecord=function(){window.__newTripActive806=false;window.__tripResume806=null;const r=oldEdit.apply(this,arguments);homeParts();return r;};
+ homeParts();
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{homeParts();},{once:true});
 })();
 
 </script>
