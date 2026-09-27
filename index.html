@@ -11101,19 +11101,7 @@ function resetNewEntryStateV11806(){
  preserveEntryNext=true;
 }
 
-function rotateEntryPhotoV11806(button){
- const card=button.closest('.photo'),i=Number(card?.dataset.i),item=photoState[i],img=card?.querySelector('img');
- if(!item||!img?.complete||!img.naturalWidth)return;
- const canvas=document.createElement('canvas');
- try{
-  canvas.width=img.naturalHeight;canvas.height=img.naturalWidth;
-  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('画像処理を開始できませんでした');
-  ctx.translate(canvas.width,0);ctx.rotate(Math.PI/2);ctx.drawImage(img,0,0);
-  const data=canvas.toDataURL('image/png');if(data==='data:,')throw new Error('回転画像を作成できませんでした');
-  photoState[i]={...item,data};dirty=true;renderPhotos();
- }catch(error){console.error('写真の回転に失敗しました',error);alert('写真を回転できませんでした。元の写真は変更していません。');}
- finally{canvas.width=canvas.height=0;}
-}
+function rotateEntryPhotoV11806(button){const i=Number(button.closest('.photo')?.dataset.i);return window.rotatePhotoItem806(i,90);}
 
 function prepareEntry(date){resetEntry(false);document.querySelector('[name=date]').value=date||new Date().toISOString().slice(0,10);addSegment();document.getElementById('entryTitle').textContent='新規釣行';updateWaterLevelVisibility()}
 function placePhotos(){return load(LS.placePhotos,{})}
@@ -12870,11 +12858,11 @@ function maybeAutoWeather(){return maybeAutoWeatherV11456()}
 // photos: IndexedDB
 function photoDB(){return new Promise((res,rej)=>{let q=indexedDB.open('heraDiaryPhotos',1);q.onupgradeneeded=()=>{let db=q.result;if(!db.objectStoreNames.contains('photos'))db.createObjectStore('photos',{keyPath:'key'})};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 async function photoGetAll(id){let db=await photoDB();return new Promise((res,rej)=>{let tx=db.transaction('photos','readonly'),q=tx.objectStore('photos').getAll();q.onsuccess=()=>res(q.result.filter(x=>x.recordId===id).sort((a,b)=>a.order-b.order));q.onerror=()=>rej(q.error)})}
-async function photoPut(items,id){let db=await photoDB();let old=await photoGetAll(id);await new Promise((res,rej)=>{let tx=db.transaction('photos','readwrite'),st=tx.objectStore('photos');old.forEach(x=>st.delete(x.key));items.forEach((x,i)=>st.put({key:id+':'+i,recordId:id,order:i,data:x.data,name:x.name||''}));tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+async function photoPut(items,id){items=await window.photoIdentityPrepare806(items,id);let db=await photoDB();let old=await photoGetAll(id);await window.photoRememberRemoved806(items,id,old);await new Promise((res,rej)=>{let tx=db.transaction('photos','readwrite'),st=tx.objectStore('photos');old.forEach(x=>st.delete(x.key));items.forEach((x,i)=>st.put({...x,key:id+':'+i,recordId:id,order:i,data:x.data,name:x.name||''}));tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
 function renderPhotos(){let el=document.getElementById('photoPreview');el.innerHTML=photoState.map((p,i)=>`<div class="photo" draggable="true" data-i="${i}"><img src="${p.data}" onclick="lightPhoto('${p.data}')" onload="this.parentElement.querySelector('.photo-rotate806').disabled=false"><button type="button" onclick="removePhoto(${i})">×</button><button type="button" class="photo-rotate806" onkeydown="event.stopPropagation()" disabled aria-label="写真を右に90度回転" onclick="event.preventDefault();event.stopPropagation();rotateEntryPhotoV11806(this)">↻ 右90°</button></div>`).join('');[...el.querySelectorAll('.photo')].forEach(n=>{n.ondragstart=e=>e.dataTransfer.setData('text/plain',n.dataset.i);n.ondragover=e=>e.preventDefault();n.ondrop=e=>{e.preventDefault();let a=+e.dataTransfer.getData('text/plain'),b=+n.dataset.i,[x]=photoState.splice(a,1);photoState.splice(b,0,x);renderPhotos()}})}
 function removePhoto(i){if(!confirm('この写真を削除しますか？'))return;photoState.splice(i,1);renderPhotos();dirty=true}
 document.getElementById('photoInput').onchange=e=>{let files=[...e.target.files].slice(0,Math.max(0,10-photoState.length));files.forEach(f=>{let rd=new FileReader();rd.onload=()=>{photoState.push({data:rd.result,name:f.name});renderPhotos();dirty=true};rd.readAsDataURL(f)});e.target.value=''};
-async function savePhotos(id){await photoPut(photoState,id)}async function loadEntryPhotos(id){const generation=window.__entryGeneration806;const pending=photoGetAll(id);window.__entryPhotoRead806=pending;const rows=await pending;if(generation!==window.__entryGeneration806||document.getElementById('entryForm').elements.editId.value!==String(id))return;photoState=rows.map(x=>({data:x.data,name:x.name}));renderPhotos()}async function loadDetailPhotos(id){let p=await photoGetAll(id),el=document.getElementById('detailPhotos');if(el)el.innerHTML=p.length?p.map(x=>`<div class="photo"><img src="${x.data}" onclick="lightPhoto('${x.data}')"></div>`).join(''):'<div class="detail-photo-empty">写真はまだ登録されていません</div>'}
+async function savePhotos(id){await photoPut(photoState,id)}async function loadEntryPhotos(id){const generation=window.__entryGeneration806;const pending=photoGetAll(id);window.__entryPhotoRead806=pending;const rows=await pending;if(generation!==window.__entryGeneration806||document.getElementById('entryForm').elements.editId.value!==String(id))return;const prepared=await window.photoIdentityPrepare806(rows,id);if(generation!==window.__entryGeneration806||document.getElementById('entryForm').elements.editId.value!==String(id))return;photoState=prepared;renderPhotos()}async function loadDetailPhotos(id){let p=await photoGetAll(id),el=document.getElementById('detailPhotos');if(el)el.innerHTML=p.length?p.map(x=>`<div class="photo"><img src="${x.data}" onclick="lightPhoto('${x.data}')"></div>`).join(''):'<div class="detail-photo-empty">写真はまだ登録されていません</div>'}
 async function exportBackup(){let dbPhotos=[];try{let db=await photoDB();dbPhotos=await new Promise((res,rej)=>{let tx=db.transaction('photos','readonly'),q=tx.objectStore('photos').getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}catch{}let data={version:'0.9.5',exportedAt:new Date().toISOString(),user:load(LS.user,[]),over:load(LS.over,{}),trash:load(LS.trash,{}),maps:load(LS.maps,{}),pins:load(LS.pins,{}),locations:load(LS.locations,{}),placePhotos:load(LS.placePhotos,{}),photos:dbPhotos};let blob=new Blob([JSON.stringify(data)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='へらぶな釣り日誌_バックアップ_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
 async function restoreBackup(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('バックアップファイルを選んでください。');if(!confirm('現在のユーザーデータはバックアップ内容で置き換わります。よろしいですか？'))return;let d=JSON.parse(await f.text());save(LS.user,d.user||[]);save(LS.over,d.over||{});save(LS.trash,d.trash||{});save(LS.maps,d.maps||{});save(LS.pins,d.pins||{});save(LS.locations,d.locations||{});save(LS.placePhotos,d.placePhotos||{});try{let db=await photoDB();await new Promise((res,rej)=>{let tx=db.transaction('photos','readwrite'),st=tx.objectStore('photos');st.clear();(d.photos||[]).forEach(x=>st.put(x));tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}catch{}refresh();alert('復元しました。')}
 function deleteAllUserData(){if(!confirm('ユーザーデータを全削除しますか？'))return;if(!confirm('追加・編集・設定が消えます。元には戻せません。よろしいですか？'))return;Object.values(LS).forEach(k=>localStorage.removeItem(k));indexedDB.deleteDatabase('heraDiaryPhotos');refresh()}
@@ -80332,7 +80320,7 @@ window.renderActivityCalcDetailV11736=function(){};
       try{
         photoSnapshot=Array.isArray(photoState)
           ? photoState.map(function(p){
-              return {data:p&&p.data||'',name:p&&p.name||''};
+              return Object.assign({},p,{data:p&&p.data||'',name:p&&p.name||''});
             }).filter(function(p){return !!p.data})
           : [];
       }catch(_e){photoSnapshot=[]}
@@ -80654,7 +80642,8 @@ window.renderActivityCalcDetailV11736=function(){};
   window.heraPhotoPutFastV11790=async function(items,recordId){
     var id=String(recordId||'');
     if(!id)return;
-    var arr=(Array.isArray(items)?items:[]).slice(0,10);
+    var arr=await window.photoIdentityPrepare806((Array.isArray(items)?items:[]).slice(0,10),id);
+    await window.photoRememberRemoved806(arr,id,await photoGetAll(id));
     var db=await openPhotoDb();
     try{
       await new Promise(function(resolve,reject){
@@ -80667,6 +80656,7 @@ window.renderActivityCalcDetailV11736=function(){};
         arr.forEach(function(p,i){
           if(!p||!p.data)return;
           st.put({
+            ...p,
             key:id+':'+i,
             recordId:id,
             order:i,
@@ -82172,9 +82162,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   async function scan(){
     const records=new Set(api.localRecords().map(r=>r.id)),raw=await readPhotos(),occurrences=new Map(),photos=[];
     for(const row of raw.filter(r=>records.has(r.recordId)).sort((a,b)=>String(a.recordId).localeCompare(String(b.recordId))||a.order-b.order)){
-      const blob=blobFromData(row.data),sha256=await hash(await blob.arrayBuffer()),identity=row.recordId+'\0'+sha256,index=occurrences.get(identity)||0;occurrences.set(identity,index+1);
-      const photo_id=await hash(identity+'\0'+index);
-      photos.push({row,blob,meta:{photo_id,record_id:row.recordId,sha256,byte_size:blob.size,mime:blob.type,sort_order:Number(row.order),name:row.name||'',rotation:0}});
+      const blob=blobFromData(row.originalData||row.data),sha256=await hash(await blob.arrayBuffer()),identity=row.recordId+'\0'+sha256,index=occurrences.get(identity)||0;occurrences.set(identity,index+1);
+      const photo_id=/^[a-f0-9]{64}$/.test(row.photo_id||'')?row.photo_id:await hash(identity+'\0'+index);
+      photos.push({row,blob,meta:{photo_id,record_id:row.recordId,sha256,byte_size:blob.size,mime:blob.type,sort_order:Number(row.order),name:row.name||'',rotation:[0,90,180,270].includes(row.rotation)?row.rotation:0}});
     }
     return photos;
   }
@@ -82194,7 +82184,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     $('photo806Counts').textContent=api.phone()?'写真未同期：'+pending.length+'枚／同期済み：'+(photos.length-pending.length)+'枚\n未送信の推定容量：約'+(pending.filter(p=>!receipts[p.meta.photo_id]?.uploaded).reduce((n,p)=>n+p.blob.size,0)/1048576).toFixed(2)+'MB（この端末の同期履歴）':'端末内の釣行写真：'+photos.length+'枚。クラウドの確認・取得は下のボタンで行います。';
   }catch(e){$('photo806Counts').textContent='写真状況を確認できません：'+e.message;}finally{statsBusy=false;controls();}}
   async function manifest(){const rows=await api.request('/rest/v1/rpc/hera_photo_manifest806',{});if(!Array.isArray(rows))throw Error('写真一覧の応答が不正です。');
-    const ids=new Set();for(const m of rows){const id=m.owner_id+'/'+m.photo_id;if(ids.has(id)||!/^[-a-f0-9]{36}$/.test(m.owner_id)||!/^[a-f0-9]{64}$/.test(m.photo_id)||!/^[a-f0-9]{64}$/.test(m.sha256)||m.storage_path!==id||typeof m.record_id!=='string'||!m.record_id||!Number.isInteger(m.sort_order)||m.sort_order<0||m.sort_order>9||!Number.isSafeInteger(m.byte_size)||m.byte_size<1||m.byte_size>52428800||!['image/jpeg','image/png','image/webp','image/gif'].includes(m.mime)||m.rotation!==0)throw Error('写真の紐付け情報が不正です。');ids.add(id);}
+    const ids=new Set();for(const m of rows){const id=m.owner_id+'/'+m.photo_id;if(ids.has(id)||!/^[-a-f0-9]{36}$/.test(m.owner_id)||!/^[a-f0-9]{64}$/.test(m.photo_id)||!/^[a-f0-9]{64}$/.test(m.sha256)||m.storage_path!==id||typeof m.record_id!=='string'||!m.record_id||!Number.isInteger(m.sort_order)||m.sort_order<0||m.sort_order>9||!Number.isSafeInteger(m.byte_size)||m.byte_size<1||m.byte_size>52428800||!['image/jpeg','image/png','image/webp','image/gif'].includes(m.mime)||![0,90,180,270].includes(m.rotation))throw Error('写真の紐付け情報が不正です。');ids.add(id);}
     return rows;
   }
   async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){message(e.name==='AbortError'?'写真通信を停止しました。次回ボタンで再試行してください。':e.message);throw e;}finally{batch=null;controls();await stats();}});}
@@ -82226,7 +82216,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       if(api.stable(current)!==expected||!api.localRecords().some(r=>r.id===rid))throw Error('送信中に写真・釣行が変更されました。写真一覧の確定を中止しました。再度ボタンで確認してください。');
       const oldActive=remote.filter(r=>r.owner_id===uid&&r.record_id===rid&&r.active);
       const same=oldActive.length===list.length&&list.every(p=>oldActive.some(r=>r.photo_id===p.meta.photo_id&&signature(r)===signature(p.meta)));
-      if(!same){try{const result=await api.request('/rest/v1/rpc/hera_photo_commit806',{trip_id:rid,items:list.map(p=>p.meta)});if(result.accepted!==list.length)throw Error('写真一覧の確定件数が一致しません。');}catch(e){/* Uploaded bytes remain; only a committed signature counts as synced. */throw e;}}
+      if(!same){try{const result=await api.request('/rest/v1/rpc/hera_photo_commit806',{trip_id:rid,items:list.map(p=>p.meta)});if(result.accepted!==list.length)throw Error('写真一覧の確定件数が一致しません。');if(list.some(p=>p.meta.rotation!==0)){const confirmed=await manifest();if(!list.every(p=>confirmed.some(m=>m.owner_id===uid&&m.active&&m.photo_id===p.meta.photo_id&&signature(m)===signature(p.meta))))throw Error('回転情報を確認できません。Supabaseで追加の supabase-photo-rotation806.sql を実行してから再試行してください。');}}catch(e){/* Uploaded bytes remain; only a committed signature counts as synced. */throw e;}}
       for(const p of list)receipts[p.meta.photo_id]={uploaded:true,signature:signature(p.meta)};
       await stateSet('up:'+uid,receipts);committed+=list.length;
     }
@@ -82245,14 +82235,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   async function download(){
     if(api.phone()||api.identity.role!=='writer')throw Error('写真取得はPC書込用アカウントで実行してください。');checkNetwork();
     const remote=(await manifest()).filter(r=>r.active),records=new Set(api.localRecords().map(r=>r.id)),local=await scan(),receipts=await stateGet('down:'+api.identity.uid),groups=new Map();
-    let waiting=0,kept=0,deleted=0,limit=0;
+    let waiting=0,kept=0,deleted=0,limit=0;const tombstones=new Map();
     for(const m of remote.sort((a,b)=>a.record_id.localeCompare(b.record_id)||a.sort_order-b.sort_order||a.photo_id.localeCompare(b.photo_id))){
       if(!records.has(m.record_id)){waiting++;continue;}
       const cloudId=m.owner_id+'/'+m.photo_id;
       const match=local.find(p=>p.meta.record_id===m.record_id&&p.meta.photo_id===m.photo_id);
       if(match){kept++;receipts[cloudId]={sha256:m.sha256};continue;}
+      if(!tombstones.has(m.record_id))tombstones.set(m.record_id,new Set(await window.photoDeletedIds806(m.record_id)));
       // A previously obtained photo removed or rotated locally is not resurrected.
-      if(receipts[cloudId]){deleted++;continue;}
+      if(receipts[cloudId]||tombstones.get(m.record_id).has(m.photo_id)){deleted++;continue;}
       if(!groups.has(m.record_id))groups.set(m.record_id,[]);const list=groups.get(m.record_id),count=local.filter(p=>p.meta.record_id===m.record_id).length;
       if(count+list.length>=10){limit++;continue;}list.push(m);
     }
@@ -82266,7 +82257,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         const blob=await api.rawRequest('/storage/v1/object/authenticated/'+BUCKET+'/'+m.storage_path,{method:'GET',signal:batch.signal,responseType:'blob'});
         if(blob.size!==m.byte_size||await hash(await blob.arrayBuffer())!==m.sha256)throw Error('取得写真のハッシュ・容量が一致しません。PCへの保存を中止しました。');
         const order=Math.max(-1,...before.map(r=>Number(r.order)),...rows.map(r=>r.order))+1;if(order>9)throw Error('既存写真の順序を維持できません。写真数を確認してください。');
-        rows.push({key:rid+':'+order,recordId:rid,order,data:await blobData(new Blob([blob],{type:m.mime})),name:m.name||''});
+        const originalData=await blobData(new Blob([blob],{type:m.mime}));
+        rows.push({key:rid+':'+order,recordId:rid,order,photo_id:m.photo_id,originalData,rotation:m.rotation,data:await window.photoRotateData806(originalData,m.rotation),name:m.name||''});
       }
       checkBatch();if(api.pendingEntry()||!api.localRecords().some(r=>r.id===rid))throw Error('取得中に釣行の編集・削除が始まったため保存を中止しました。');
       await appendPhotos(rid,before,rows);list.forEach(m=>{receipts[m.owner_id+'/'+m.photo_id]={sha256:m.sha256};});await stateSet('down:'+api.identity.uid,receipts);downloaded+=rows.length;
@@ -82343,6 +82335,121 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     content.appendChild(button);
     return result;
   };
+})();
+
+</script>
+<style id="photo-editor806-style">
+#photoEditor806[hidden]{display:none!important}
+#photoEditor806{position:fixed;inset:0;z-index:2147483000;background:rgba(20,14,10,.92);display:grid;place-items:center;padding:16px;box-sizing:border-box}
+#photoEditor806 .photo-editor-panel806{display:flex;flex-direction:column;width:min(1500px,100%);height:calc(100dvh - 32px);background:#fffaf3;border:1px solid #ad885e;border-radius:16px;padding:16px;box-sizing:border-box;overflow:hidden}
+#photoEditor806 header{display:flex;align-items:center;justify-content:space-between;gap:20px;color:#4a2c1f;flex-shrink:0}
+#photoEditor806 h2{margin:0;font-size:21px}
+#photoEditor806 .photo-editor-stage806{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#241c16;border-radius:10px;margin:12px 0;overflow:hidden}
+#photoEditor806 img{width:100%;height:100%;object-fit:contain;max-width:100%;max-height:100%;display:block}
+#photoEditor806 .photo-editor-actions806{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;flex-shrink:0}
+#photoEditor806 button{min-width:100px;min-height:46px;background:#fff7e9;color:#4a2c1f;border:1px solid #92653b;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer;-webkit-text-fill-color:#4a2c1f!important}
+#photoEditor806 button:hover:not(:disabled),#photoEditor806 button:focus-visible{background:#4a2c1f;color:white!important;-webkit-text-fill-color:#fff!important}
+#photoEditor806 button:disabled{opacity:.45;cursor:default}
+#photoEditor806 p{margin:8px 0 0;text-align:center;font-size:13px;color:#604630;flex-shrink:0}
+#photoEditorError806:empty{display:none}
+body.photo-editing806{overflow:hidden!important}
+html.pc-photo-editor806 body #entry #photoPreview .photo button.photo-rotate806{display:none!important}
+html.pc-photo-editor806 #photoPreview img{cursor:zoom-in}
+@media(hover:hover){body #detail #detailEditTop:hover,body #detail .detail-prev-edit-v11395:hover{background:#4a2c1f!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#4a2c1f!important;opacity:1!important;filter:none!important}body #detail #detailEditTop:hover::before{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important}}
+
+</style>
+<script id="photo-editor806-script">
+/* Persist identity/original pixels separately from the legacy display image. */
+(() => {
+ 'use strict';
+ document.documentElement.classList.toggle('pc-photo-editor806',!phoneV11806());
+ // Local photo saves must also work in older/non-secure LAN contexts.
+ function fallbackSHA256(bytes){
+   const k='428a2f98 71374491 b5c0fbcf e9b5dba5 3956c25b 59f111f1 923f82a4 ab1c5ed5 d807aa98 12835b01 243185be 550c7dc3 72be5d74 80deb1fe 9bdc06a7 c19bf174 e49b69c1 efbe4786 0fc19dc6 240ca1cc 2de92c6f 4a7484aa 5cb0a9dc 76f988da 983e5152 a831c66d b00327c8 bf597fc7 c6e00bf3 d5a79147 06ca6351 14292967 27b70a85 2e1b2138 4d2c6dfc 53380d13 650a7354 766a0abb 81c2c92e 92722c85 a2bfe8a1 a81a664b c24b8b70 c76c51a3 d192e819 d6990624 f40e3585 106aa070 19a4c116 1e376c08 2748774c 34b0bcb5 391c0cb3 4ed8aa4a 5b9cca4f 682e6ff3 748f82ee 78a5636f 84c87814 8cc70208 90befffa a4506ceb bef9a3f7 c67178f2'.split(' ').map(v=>parseInt(v,16));
+   const h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19],p=new Uint8Array(Math.ceil((bytes.length+9)/64)*64),w=new Uint32Array(64),rr=(x,n)=>(x>>>n)|(x<<(32-n));
+   p.set(bytes);p[bytes.length]=128;const view=new DataView(p.buffer);view.setUint32(p.length-8,Math.floor(bytes.length/536870912));view.setUint32(p.length-4,(bytes.length*8)>>>0);
+   for(let off=0;off<p.length;off+=64){
+     for(let i=0;i<16;i++)w[i]=view.getUint32(off+i*4);
+     for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+w[i-7]+(rr(b,17)^rr(b,19)^(b>>>10)))>>>0;}
+     let [a,b,c,d,e,f,g,j]=h;
+     for(let i=0;i<64;i++){const t1=(j+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+k[i]+w[i])>>>0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;j=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;}
+     [a,b,c,d,e,f,g,j].forEach((v,i)=>h[i]=(h[i]+v)>>>0);
+   }
+   return h.map(n=>n.toString(16).padStart(8,'0')).join('');
+ }
+ const hash=async bytes=>crypto.subtle?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join(''):fallbackSHA256(bytes);
+ const textHash=s=>hash(new TextEncoder().encode(s));
+ async function historyDB(){return new Promise((resolve,reject)=>{const q=indexedDB.open('heraCloudState806',1);q.onupgradeneeded=()=>q.result.createObjectStore('state');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}
+ window.photoDeletedIds806=async id=>{const db=await historyDB();try{return await new Promise((resolve,reject)=>{const q=db.transaction('state').objectStore('state').get('deletedPhotos:'+id);q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error);});}finally{db.close();}};
+ window.photoRememberRemoved806=async(items,id,old)=>{
+   const previous=await window.photoIdentityPrepare806(old,id),kept=new Set(items.map(p=>p.photo_id)),removed=previous.filter(p=>!kept.has(p.photo_id));
+   const db=await historyDB();
+   try{await new Promise((resolve,reject)=>{const tx=db.transaction('state','readwrite'),store=tx.objectStore('state'),q=store.get('deletedPhotos:'+id);
+     q.onsuccess=()=>{const ids=new Set(q.result||[]);removed.forEach(p=>ids.add(p.photo_id));kept.forEach(id=>ids.delete(id));store.put([...ids],'deletedPhotos:'+id);};
+     tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(tx.error||Error('写真の削除履歴を保存できませんでした。'));
+   });}finally{db.close();}
+ };
+ window.photoIdentityPrepare806=async(items,id)=>{
+   const counts=new Map();
+   const result=[];
+   for(const p of items){
+     const source=p.originalData||p.data;
+     const comma=source.indexOf(','),bytes=Uint8Array.from(atob(source.slice(comma+1)),c=>c.charCodeAt(0));
+     const digest=await hash(bytes),identity=String(id)+'\0'+digest,n=counts.get(identity)||0;counts.set(identity,n+1);
+     result.push({...p,photo_id:/^[a-f0-9]{64}$/.test(p.photo_id||'')&&(!p.recordId||String(p.recordId)===String(id))?p.photo_id:await textHash(identity+'\0'+n),rotation:[0,90,180,270].includes(p.rotation)?p.rotation:0});
+   }
+   if(new Set(result.map(p=>p.photo_id)).size!==result.length)throw Error('写真IDが重複しているため保存を中止しました。');
+   return result;
+ };
+ window.photoRotateData806=async(source,angle)=>{
+   if(!angle)return source;
+   const img=new Image();img.src=source;await img.decode();
+   const c=document.createElement('canvas'),swap=angle%180!==0;c.width=swap?img.naturalHeight:img.naturalWidth;c.height=swap?img.naturalWidth:img.naturalHeight;
+   try{const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(angle*Math.PI/180);x.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);return c.toDataURL('image/png');}finally{c.width=c.height=0;}
+ };
+ let index=0,rotating=false,returnFocus=null;
+ const modal=document.createElement('div');modal.id='photoEditor806';modal.hidden=true;modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','photoEditorTitle806');
+ modal.innerHTML='<div class="photo-editor-panel806"><header><h2 id="photoEditorTitle806">写真を編集</h2><span id="photoEditorCount806"></span></header><div class="photo-editor-stage806"><img alt="編集中の写真"></div><div class="photo-editor-actions806"><button type="button" data-action="prev">前へ</button><button type="button" data-action="next">次へ</button><button type="button" data-action="left">左90°</button><button type="button" data-action="right">右90°</button><button type="button" data-action="delete">削除</button><button type="button" data-action="close">閉じる</button></div><p>変更は釣行の「保存」で確定します。最初の写真が代表写真です。</p><p id="photoEditorError806" role="status"></p></div>';
+ document.body.appendChild(modal);
+ function paint(){
+   if(modal.hidden)return;
+   if(!photoState.length){close();return;}
+   index=Math.min(index,photoState.length-1);modal.querySelector('img').src=photoState[index].data;
+   document.getElementById('photoEditorCount806').textContent=(index+1)+' / '+photoState.length+'枚';
+   modal.querySelectorAll('button').forEach(b=>b.disabled=rotating);
+   modal.querySelector('[data-action=prev]').disabled=rotating||index===0;
+   modal.querySelector('[data-action=next]').disabled=rotating||index===photoState.length-1;
+ }
+ function close(){if(rotating)return;modal.hidden=true;document.body.classList.remove('photo-editing806');returnFocus?.focus();}
+ window.openPhotoEditor806=i=>{if(!photoState[i])return;index=i;returnFocus=document.activeElement;modal.hidden=false;document.body.classList.add('photo-editing806');document.getElementById('photoEditorError806').textContent='';paint();modal.querySelector('[data-action=close]').focus();};
+ window.rotatePhotoItem806=async(i,delta)=>{
+   if(rotating)return;const item=photoState[i];if(!item)return;
+   rotating=true;paint();
+   try{
+     const source=item.originalData||item.data,angle=((item.rotation||0)+delta+360)%360;
+     const data=await photoRotateData806(source,angle);
+     // Ignore a late operation after the user has switched/reset the entry.
+     if(photoState[i]!==item)return;
+     photoState[i]={...item,originalData:source,rotation:angle,data};dirty=true;renderPhotos();
+   }catch(e){document.getElementById('photoEditorError806').textContent='回転できませんでした。元の写真は保持しています。';console.error(e);}
+   finally{rotating=false;paint();}
+ };
+ modal.addEventListener('click',async e=>{
+   const a=e.target.closest('button')?.dataset.action;if(!a||rotating)return;
+   if(a==='close')close();
+   if(a==='prev'){index--;paint();}if(a==='next'){index++;paint();}
+   if(a==='left'||a==='right')await rotatePhotoItem806(index,a==='left'?-90:90);
+   if(a==='delete'&&confirm('この写真を削除しますか？釣行の保存で確定します。')){removePhoto(index);dirty=true;paint();}
+ });
+ modal.addEventListener('keydown',e=>{
+   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}
+   if(e.key==='Tab'){const buttons=[...modal.querySelectorAll('button:not(:disabled)')],first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+ });
+ // Capture only editable PC thumbnails; ordinary detail/photo viewers are unchanged.
+ window.addEventListener('click',e=>{
+   if(phoneV11806()||!e.target.closest?.('img'))return;
+   const card=e.target.closest('#photoPreview .photo[data-i]');if(!card)return;e.preventDefault();e.stopImmediatePropagation();openPhotoEditor806(Number(card.dataset.i));
+ },true);
 })();
 
 </script>
