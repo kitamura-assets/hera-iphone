@@ -10844,8 +10844,8 @@ function fishSizeModeLabel(r){
   return '';
 }
 
-function norm(r){r={...r};applyConfirmedSeatV11806(r);let __sizeMeta=inferLegacySizeModes(r);r.sizeMinMode=r.sizeMinMode||__sizeMeta.minMode;r.sizeMaxMode=r.sizeMaxMode||__sizeMeta.maxMode;r.sizeMode=(r.sizeMinMode==='実測'||r.sizeMaxMode==='実測')?'実測':(r.sizeMode||'');r.hasMeasuredSize=r.sizeMode==='実測';r.id=idOf(r);r.place=normPlace(r.place);r.spot=normSpot(r.place,r.spot);r.rod=normRod(r.rod);r.methodCategory=methods.includes(r.methodCategory)?r.methodCategory:methodCat(r.methodCategory||r.method);r.baitCategory=baits.includes(r.baitCategory)?r.baitCategory:baitCat(r.baitCategory||r.bait);r.diary=r.diary??r.comment??'';r.year=Number(r.year||String(r.date).slice(0,4));r.month=Number(r.month||String(r.date).slice(5,7));if(!r.segments||!r.segments.length)r.segments=[{method:r.methodCategory||'',bait:r.baitCategory||'',rod:r.rod||'',count:Number(r.count)||0}];r.segments=(r.segments||[]).map(s=>{let tp=parseTanaRange(s.tana||'');let tanaStart=normalizeTanaNumber(s.tanaStart??tp.start),tanaEnd=normalizeTanaNumber(s.tanaEnd??tp.end);return {method:methods.includes(s.method)?s.method:methodCat(s.method)||r.methodCategory||'',tanaStart,tanaEnd,tana:formatTanaRange(tanaStart,tanaEnd),bait:baits.includes(s.bait)?s.bait:baitCat(s.bait)||r.baitCategory||'',rod:normRod(s.rod||r.rod||''),rodName:legacyRodNameForDateV11301(s.rod||r.rod||'',r.date,String(s.rodName||'').trim()),count:Number(s.count)||0}});if(r.count==null)r.count=r.segments.reduce((a,s)=>a+(Number(s.count)||0),0);let dm=durationMin(r);if((r.per_hour==null||!Number.isFinite(+r.per_hour))&&dm>0)r.per_hour=Number(r.count)*60/dm;return r}
-function activeData(){let over=load(LS.over,{}),trash=load(LS.trash,{}),user=load(LS.user,[]);let base=[...excelData,...user].map(norm).map(r=>over[r.id]?norm(over[r.id]):r).filter(r=>!trash[r.id]);return base}
+function norm(r){r={...r};applyConfirmedSeatV11806(r);let __sizeMeta=inferLegacySizeModes(r);r.sizeMinMode=r.sizeMinMode||__sizeMeta.minMode;r.sizeMaxMode=r.sizeMaxMode||__sizeMeta.maxMode;r.sizeMode=(r.sizeMinMode==='実測'||r.sizeMaxMode==='実測')?'実測':(r.sizeMode||'');r.hasMeasuredSize=r.sizeMode==='実測';r.id=idOf(r);r.place=normPlace(r.place);r.spot=normSpot(r.place,r.spot);r.rod=normRod(r.rod);r.methodCategory=methods.includes(r.methodCategory)?r.methodCategory:methodCat(r.methodCategory||r.method);r.baitCategory=baits.includes(r.baitCategory)?r.baitCategory:baitCat(r.baitCategory||r.bait);r.diary=r.diary??r.comment??'';r.year=Number(r.year||String(r.date).slice(0,4));r.month=Number(r.month||String(r.date).slice(5,7));if(!r.segments||!r.segments.length)r.segments=[{method:r.methodCategory||'',bait:r.baitCategory||'',rod:r.rod||'',count:Number(r.count)||0}];r.segments=(r.segments||[]).map((s,index)=>{let tp=parseTanaRange(s.tana||'');let tanaStart=normalizeTanaNumber(s.tanaStart??tp.start),tanaEnd=normalizeTanaNumber(s.tanaEnd??tp.end);return {method:methods.includes(s.method)?s.method:methodCat(s.method)||r.methodCategory||'',tanaStart,tanaEnd,tana:formatTanaRange(tanaStart,tanaEnd),bait:baits.includes(s.bait)?s.bait:baitCat(s.bait)||r.baitCategory||'',rod:normRod(s.rod||r.rod||''),rodName:legacyRodNameForDateV11301(s.rod||r.rod||'',r.date,String(s.rodName||'').trim()),count:Number(s.count)||0,ryankoCount:legacySegmentRyanko806(r,s,index)}});if(r.count==null)r.count=r.segments.reduce((a,s)=>a+(Number(s.count)||0),0);let dm=durationMin(r);if((r.per_hour==null||!Number.isFinite(+r.per_hour))&&dm>0)r.per_hour=Number(r.count)*60/dm;return r}
+function activeData(){let over=load(LS.over,{}),trash=load(LS.trash,{}),user=load(LS.user,[]);let source=[...excelData,...user],ids=new Set(source.map(idOf));for(const [id,r] of Object.entries(over))if(!ids.has(id))source.push({...r,id});let base=[...new Map(source.map(r=>[idOf(r),r])).values()].map(norm).map(r=>Object.prototype.hasOwnProperty.call(over,r.id)?norm(over[r.id]):r).filter(r=>!trash[r.id]);return base}
 let allData=[];let currentMapPlace='';let photoState=[];let dirty=false;let calDate=new Date();let homeCalDate=new Date();let homeFeaturedPlace='丸堀';let mapSelectForEntry=false;let preserveEntryNext=false;let searchExactDate='';let mapState={scale:1,panX:0,panY:0,imgW:1,imgH:1,stageW:1,stageH:1,padL:0,padR:0,padT:0,padB:0,edit:false,pending:null,pan:false,dragPin:null,moved:false,lastX:0,lastY:0};
 function refresh(){allData=activeData();renderHome();setupChoices();renderCalendar();if(!document.documentElement.classList.contains('search-booting-v1146'))renderSearch();renderAnalysis();renderPlaces();renderTrash()}
 function goPage(id){let __fromPage=document.querySelector('.page.active')?.id||'';if(id==='entry'&&__fromPage&&__fromPage!=='entry')window.__entryReturnPageV11307=__fromPage;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='entry'&&!document.querySelector('[name=editId]').value&&!preserveEntryNext)prepareEntry();if(id==='entry')preserveEntryNext=false;if(id==='calendar')renderCalendar();if(id==='search'&&!document.documentElement.classList.contains('search-booting-v1146'))renderSearch();if(id==='analysis')renderAnalysis();if(id==='places'){if(!mapSelectForEntry){document.getElementById('places')?.classList.remove('map-select-active');}renderPlaces();}if(id==='trash')renderTrash()}
@@ -10923,27 +10923,78 @@ function validateSpecialSeatV11806(){
  el.setCustomValidity(missing?'座席番号を入力してください。':'');entryFieldErrorV11804(el,el.validationMessage);
  if(missing){focusEntryErrorV11804(el);return false;}return true;
 }
-function validateSpecialTotalV11806(){
- if(!specialModeV11806())return true;
- const f=specialFieldsV11806(),e=document.getElementById('specialTotalInput806');
- if(/^\d+$/.test(f.elements.specialTotal806.value))return true;
- if(e){e.setCustomValidity('総枚数を入力してください。0枚の場合も0を入力してください。');e.reportValidity();e.focus();}
- else alert('総枚数を入力してください。0枚の場合も0を入力してください。');
- return false;
+function specialSegmentRowsV11806(){
+ return [...document.querySelectorAll('#segments .segment')].map((el,index)=>{
+  const value=c=>el.querySelector('.seg-'+c)?.value||'';
+  return {el,index,method:value('method'),bait:value('bait'),rod:value('rod'),rodName:value('rod-name'),tanaStart:value('tana-start'),tanaEnd:value('tana-end'),start:value('start'),end:value('end'),count:Number(value('count'))||0};
+ });
 }
-function setSpecialTotalV11806(value){
+function specialSegmentRyankoV11806(index){
+ const input=document.querySelectorAll('#segments .segment')[index]?.querySelector('.seg-ryanko');if(input)return Number(input.value)||0;return specialEventsV11806().filter(e=>e.segmentIndex===index).length;}
+function specialSegmentTitleV11806(r){return (r.method||'釣り方未設定')+'（'+(r.tanaStart?(r.tanaStart+(r.tanaEnd?'〜'+r.tanaEnd:'')+'m'):'タナ未指定')+'）の'+(r.bait||'餌未設定');}
+function syncSpecialTotalsV11806(){
  const f=specialFieldsV11806();if(!f||!specialModeV11806())return;
- const v=String(value).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\D/g,'');
- f.elements.specialTotal806.value=v;
- const rows=[...document.querySelectorAll('#segments .seg-count')];rows.forEach((e,i)=>{e.value=i===rows.length-1?String(Number(v)||0):'0';});
- const el=document.getElementById('specialTotalInput806');if(el){if(el.value!==v)el.value=v;el.setCustomValidity('');}
- calcEntry();dirty=true;persistSpecialV11806();window.heraLiveV515?.paint();
+ f.elements.specialTotal806.value=String(specialSegmentRowsV11806().reduce((n,r)=>n+r.count,0));
+}
+function validateSpecialTotalV11806(){
+ if(!specialModeV11806())return true;syncSpecialTotalsV11806();return true;
 }
 function persistSpecialV11806(){const f=specialFieldsV11806();if(!f||!specialModeV11806())return;localStorage.setItem('hera_live_special_v11806',JSON.stringify({date:f.elements.date.value,place:f.elements.place.value,total:f.elements.specialTotal806.value,events:specialEventsV11806()}));}
-function changeSpecialRyankoV11806(delta){
- if(!specialModeV11806())return;const f=specialFieldsV11806(),a=specialEventsV11806();
- if(delta>0){const d=new Date(),pad=x=>String(x).padStart(2,'0'),time=[d.getHours(),d.getMinutes(),d.getSeconds()].map(pad).join(':');a.push({at:d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+time,time,type:'specialRyanko',count:0});}else a.pop();
- f.elements.specialRyanko806.value=JSON.stringify(a);dirty=true;persistSpecialV11806();paintSpecialV11806();renderHourlyV11806();
+let specialResultPending806=null,specialResultPermit806='';
+function consumeSpecialPermitV11806(kind){if(specialResultPermit806!==kind)return false;specialResultPermit806='';return true;}
+function cancelSpecialResultV11806(){
+ const pending=specialResultPending806;specialResultPending806=null;specialResultPermit806='';
+ const box=document.getElementById('specialResultModal806');if(box)box.hidden=true;
+ if(pending?.focus?.isConnected)pending.focus.focus({preventScroll:true});
+}
+function requestSpecialResultV11806(kind,next){
+ if(!specialModeV11806()||!window.heraLiveV515?.isRunning()||specialResultPending806)return;
+ const row=specialSegmentRowsV11806().at(-1);if(!row)return;
+ let box=document.getElementById('specialResultModal806');
+ if(!box){
+  box=document.createElement('div');box.id='specialResultModal806';box.hidden=true;
+  box.innerHTML='<form class="special-result-dialog806" role="dialog" aria-modal="true" aria-labelledby="specialResultTitle806"><header><h2 id="specialResultTitle806"></h2><button type="button" data-result-cancel aria-label="閉じる">×</button></header><div class="special-result-body806"><p id="specialResultDescription806"></p><section class="special-result-current806"><span class="special-current-tag806">現在の釣り方</span><h3 id="specialResultMethod806"></h3><p id="specialResultRod806"></p><label>枚数<span><input id="specialSegmentCount806" type="text" inputmode="numeric" pattern="[0-9]+" required autocomplete="off" aria-label="この釣り方の枚数">枚</span></label><label>リャンコ<span><input id="specialSegmentRyanko806" type="text" inputmode="numeric" pattern="[0-9]+" required autocomplete="off" aria-label="この釣り方のリャンコ回数">回</span></label><small>※ この釣り方分のみを入力してください。</small><p id="specialResultError806" role="alert"></p></section><section class="special-result-total806"><h3>本日の合計（自動集計）</h3><div><span>総枚数<strong id="specialResultCount806">0枚</strong></span><span>リャンコ<strong id="specialResultRyanko806">0回</strong></span></div><small>各釣り方の記録から自動集計されます。</small></section><button type="submit" id="specialResultSave806"></button><button type="button" class="special-result-cancel806" data-result-cancel>キャンセル</button></div></form>';
+  document.body.appendChild(box);
+  box.querySelectorAll('[data-result-cancel]').forEach(b=>b.onclick=cancelSpecialResultV11806);
+  box.addEventListener('click',e=>{if(e.target===box)cancelSpecialResultV11806();});
+  box.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();cancelSpecialResultV11806();}if(e.key==='Tab'){const els=[...box.querySelectorAll('button,input')].filter(x=>!x.disabled);const i=els.indexOf(document.activeElement);if(e.shiftKey&&i===0){e.preventDefault();els.at(-1).focus();}else if(!e.shiftKey&&i===els.length-1){e.preventDefault();els[0].focus();}}});
+  box.querySelectorAll('input').forEach(e=>{e.addEventListener('focus',()=>{if(e.value==='0')e.value='';else e.select();});e.addEventListener('input',()=>{box.querySelectorAll('input').forEach(x=>x.setCustomValidity(''));document.getElementById('specialResultError806').textContent='';updateSpecialResultTotalV11806();});});
+  box.querySelector('form').onsubmit=e=>{e.preventDefault();commitSpecialResultV11806();};
+ }
+ const f=document.getElementById('entryForm');specialResultPending806={kind,next,row,generation:window.__entryGeneration806,place:f.elements.place.value,focus:document.activeElement};
+ const finish=kind==='finish';document.getElementById('specialResultTitle806').textContent=finish?'本日の釣りを終了':'現在の釣り方の釣果を入力';
+ document.getElementById('specialResultDescription806').textContent=finish?'本日の釣りを終了する前に、現在の釣り方の釣果を記録します。':'この釣り方の釣果を入力して、次の釣り方に変更します。';
+ document.getElementById('specialResultMethod806').textContent=specialSegmentTitleV11806(row);
+ document.getElementById('specialResultRod806').textContent=[row.rod,row.rodName].filter(Boolean).join('　');
+ document.getElementById('specialSegmentCount806').value=String(row.count);
+ document.getElementById('specialSegmentRyanko806').value=String(specialSegmentRyankoV11806(row.index));
+ document.getElementById('specialResultError806').textContent='';box.querySelectorAll('input').forEach(e=>e.setCustomValidity(''));
+ document.getElementById('specialResultSave806').textContent=finish?'記録して本日の釣りを終了する':'記録して次の釣り方へ';
+ updateSpecialResultTotalV11806();box.hidden=false;box.querySelector('[data-result-cancel]').focus({preventScroll:true});
+}
+function updateSpecialResultTotalV11806(){
+ const p=specialResultPending806;if(!p)return;
+ const count=Number(document.getElementById('specialSegmentCount806').value)||0,ryanko=Number(document.getElementById('specialSegmentRyanko806').value)||0;
+ document.getElementById('specialResultCount806').textContent=String(specialSegmentRowsV11806().filter(r=>r.el!==p.row.el).reduce((n,r)=>n+r.count,0)+Math.max(0,count))+'枚';
+ document.getElementById('specialResultRyanko806').textContent=String(methodRyankoTotal806()-specialSegmentRyankoV11806(p.row.index)+Math.max(0,ryanko))+'回';
+}
+function commitSpecialResultV11806(){
+ const p=specialResultPending806;if(!p)return;
+ const f=document.getElementById('entryForm');
+ if(p.generation!==window.__entryGeneration806||f.elements.place.value!==p.place||!p.row.el.isConnected||!specialModeV11806()){cancelSpecialResultV11806();return;}
+ const countEl=document.getElementById('specialSegmentCount806'),ryankoEl=document.getElementById('specialSegmentRyanko806');
+ for(const e of [countEl,ryankoEl]){if(!/^\d+$/.test(e.value)||!Number.isSafeInteger(Number(e.value))){e.setCustomValidity('0以上の整数を入力してください。');e.reportValidity();return;}}
+ const count=Number(countEl.value),ryanko=Number(ryankoEl.value);
+ if(ryanko*2>count){const message='リャンコ1回は2枚です。枚数とリャンコ回数を確認してください。';document.getElementById('specialResultError806').textContent=message;ryankoEl.setCustomValidity(message);ryankoEl.reportValidity();return;}
+ // Retain the existing event array format; only add the segment association. These are reported counts, not catch timestamps.
+ const events=specialEventsV11806().filter(e=>e.segmentIndex!==p.row.index),recordedAt=new Date().toISOString();
+ if(ryanko>10000){ryankoEl.setCustomValidity('リャンコ回数が大きすぎます。入力を確認してください。');ryankoEl.reportValidity();return;}
+ for(let i=0;i<ryanko;i++)events.push({type:'specialRyanko',count:0,segmentIndex:p.row.index,recordedAt,time:'',at:''});
+ p.row.el.querySelector('.seg-count').value=String(count);p.row.el.querySelector('.seg-ryanko').value=String(ryanko);f.elements.specialRyanko806.value=JSON.stringify(events);
+ syncSpecialTotalsV11806();calcEntry();dirty=true;persistSpecialV11806();
+ specialResultPending806=null;document.getElementById('specialResultModal806').hidden=true;
+ specialResultPermit806=p.kind;try{p.next();}finally{specialResultPermit806='';}
+ paintSpecialV11806();renderHourlyV11806();
 }
 function paintSpecialV11806(){
  const f=document.getElementById('entryForm');if(!f)return;const active=specialModeV11806();
@@ -10953,22 +11004,15 @@ function paintSpecialV11806(){
  if(!active&&seat?.validationMessage==='座席番号を入力してください。'){seat.setCustomValidity('');entryFieldErrorV11804(seat,'');}
  if(badge){const text=active?'必須':'任意';if(badge.textContent!==text)badge.textContent=text;if(badge.classList.contains('req')!==active){badge.classList.toggle('req',active);badge.classList.toggle('opt',!active);}}
  if(!active)return;specialFieldsV11806();
- if(!window.__specialHydrated806){window.__specialHydrated806=true;try{const old=JSON.parse(localStorage.getItem('hera_live_special_v11806')||'null');if(old&&old.date===f.elements.date.value&&old.place===f.elements.place.value){f.elements.specialTotal806.value=String(old.total??'');f.elements.specialRyanko806.value=JSON.stringify(old.events||[]);}}catch(_e){}}
+ if(!window.__specialHydrated806){window.__specialHydrated806=true;try{const old=JSON.parse(localStorage.getItem('hera_live_special_v11806')||'null');if(old&&old.date===f.elements.date.value&&old.place===f.elements.place.value){f.elements.specialRyanko806.value=JSON.stringify(old.events||[]);}}catch(_e){}}
+ syncSpecialTotalsV11806();
  let box=document.getElementById('specialCounter806');
- const totalField=f.elements.specialTotal806;
- if(!totalField.dataset.initialized806){if(totalField.value==='')totalField.value='0';totalField.dataset.initialized806='1';}
  if(!box){const host=root?.querySelector('.lv515-counter-card');if(!host)return;box=document.createElement('div');box.id='specialCounter806';
- box.innerHTML='<section><h3>総枚数</h3><div class="special-number806"><strong id="specialTotalDisplay806">0</strong><span>枚</span></div><div class="special-input806"><input id="specialTotalInput806" type="text" inputmode="numeric" pattern="[0-9]*" aria-label="総枚数" autocomplete="off"><button type="button" id="specialClear806" aria-label="総枚数をクリア">×</button></div><p class="special-help806">※ 機器に表示された最終枚数を入力してください</p></section><section><h3>リャンコ</h3><div class="special-number806"><strong id="specialRyankoDisplay806">0</strong><span>回</span></div><div class="special-buttons806"><button type="button" id="specialPlus806" aria-label="リャンコを1回追加">＋</button><button type="button" id="specialMinus806" aria-label="直近のリャンコを戻す">－</button></div><p class="special-help806">※ リャンコの回数を入力してください</p></section>';
- host.querySelector('.lv515-card-head').after(box);
- box.querySelector('input').addEventListener('input',e=>setSpecialTotalV11806(e.target.value));
- box.querySelector('input').addEventListener('focus',e=>{if(e.target.value==='0')e.target.value='';});
- box.querySelector('input').addEventListener('blur',e=>{if(e.target.value==='')setSpecialTotalV11806('0');});
- box.querySelector('#specialClear806').onclick=()=>{setSpecialTotalV11806('');box.querySelector('input').focus();};
- box.querySelector('#specialPlus806').onclick=()=>changeSpecialRyankoV11806(1);box.querySelector('#specialMinus806').onclick=()=>changeSpecialRyankoV11806(-1);
- }
- const v=f.elements.specialTotal806.value,n=specialEventsV11806().length;
- for(const [id,text]of [['specialTotalDisplay806',String(Number(v)||0)],['specialRyankoDisplay806',String(n)]]){const e=document.getElementById(id);if(e.textContent!==text)e.textContent=text;}
- const inp=document.getElementById('specialTotalInput806');if(inp.value!==v)inp.value=v;
+ box.innerHTML='<section><h3>総枚数</h3><div class="special-number806"><strong id="specialTotalDisplay806">0</strong><span>枚</span></div></section><section><h3>リャンコ</h3><div class="special-number806"><strong id="specialRyankoDisplay806">0</strong><span>回</span></div></section><p class="special-auto-note806">※ 釣り方ごとの記録から自動集計しています</p>';host.querySelector('.lv515-card-head').after(box);}
+ for(const [id,text]of [['specialTotalDisplay806',f.elements.specialTotal806.value],['specialRyankoDisplay806',String(methodRyankoTotal806())]]){const e=document.getElementById(id);if(e.textContent!==text)e.textContent=text;}
+ let log=document.getElementById('specialSegmentLog806');if(!log){log=document.createElement('section');log.id='specialSegmentLog806';box.closest('.lv515-counter-card').after(log);}
+ const rows=specialSegmentRowsV11806(),running=window.heraLiveV515?.isRunning(),html='<h2>釣り方ごとの釣果ログ</h2><div class="special-timeline806">'+[...rows].reverse().map(r=>{const i=r.index,current=i===rows.length-1&&running;return '<article class="special-log806 '+(current?'is-current':'')+'"><span class="special-log-marker806">'+(i+1)+'</span><span class="special-current-tag806">'+(current?'現在の釣り方':'釣り方'+(i+1))+'</span><h3>'+esc(specialSegmentTitleV11806(r))+'</h3><p>'+esc([r.rod,r.rodName].filter(Boolean).join('　'))+'</p><div class="special-log-catch806"><strong>'+r.count+'枚</strong><span>リャンコ '+specialSegmentRyankoV11806(r.index)+'回</span></div><p class="special-log-time806">'+esc(current?'開始 '+(r.start||'—'):(r.start||'—')+' 〜 '+(r.end||'—'))+'</p>'+(current?'<button type="button" onclick="heraLiveV515.changeFishing()">枚数を記録して、釣り方を変更する</button>':'')+'</article>';}).join('')+'</div>';
+ if(log.innerHTML!==html)log.innerHTML=html;
 }
 function hourlyRowsV11806(events){
  const bins=new Map();for(const e of Array.isArray(events)?events:[]){if(e&&typeof e==='object'&&e.type==='specialRyanko')continue;
@@ -10979,8 +11023,10 @@ function hourlyRowsV11806(events){
 function hourlyHtmlV11806(events){const a=hourlyRowsV11806(events);return a.length?'<table class="hourly806" aria-label="時間帯別釣果"><thead><tr><th>時間</th><th>枚数</th><th>リャンコ</th></tr></thead><tbody>'+a.map(r=>'<tr><td>'+r.hour+'時〜'+((r.hour+1)%24)+'時</td><td>'+r.count+'枚</td><td>'+(r.ryanko?'※リャンコ'+r.ryanko+'回':'')+'</td></tr>').join('')+'</tbody></table>':'';}
 function renderHourlyV11806(){
  const f=document.getElementById('entryForm'),host=document.querySelector('#entry .entry-status-card');if(!f||!host)return;
- const times=window.parseCatchTimesV11660?.(f.elements.catchTimesJson?.value)||[],special=specialEventsV11806();
- const html=hourlyHtmlV11806(times)+(special.length?'<div class="ryanko-record-v11796"><strong>リャンコ '+special.length+'回</strong><div>'+special.map(e=>esc(String(e.time||'').slice(0,5))).join('　')+'</div></div>':'');
+ const times=window.parseCatchTimesV11660?.(f.elements.catchTimesJson?.value)||[];
+ // リャンコ合計は既存の釣り方別集計欄に統一し、ここでは時間帯表だけを描画する。
+ window.paintMethodRyanko806?.();
+ const html=hourlyHtmlV11806(times);
  let el=document.getElementById('hourlyEntry806');if(!html){el?.remove();return;}if(!el){el=document.createElement('div');el.id='hourlyEntry806';host.appendChild(el);}if(el.innerHTML!==html)el.innerHTML=html;
 }
 function missingOptionalV11806(){
@@ -11020,6 +11066,7 @@ function finishEditV11806(id){
  f.elements.editId.value='';window.__editPeak806=null;
 }
 function resetNewEntryStateV11806(){
+ cancelSpecialResultV11806();
  window.__tripResume806=null;window.__newTripActive806=true;
  window.__entryGeneration806=(window.__entryGeneration806||0)+1;
  window.__entryPhotoRead806=null;
@@ -11033,7 +11080,7 @@ function resetNewEntryStateV11806(){
  const d=new Date();f.elements.date.value=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
  f.elements.specialRyanko806.value='[]';if(f.elements.catchTimesJson)f.elements.catchTimesJson.value='[]';
  setEntryTime('start','');setEntryTime('end','');addSegment({method:'深宙',bait:'両ダンゴ',rod:'',rodName:'',tanaStart:'',tanaEnd:'',count:0,start:'',end:''});
- for(const e of document.querySelectorAll('#segments input,#segments select')){if(e.classList.contains('seg-count'))e.value='0';else if(e.classList.contains('seg-method'))e.value='深宙';else if(e.classList.contains('seg-bait'))e.value='両ダンゴ';else e.value='';}
+ for(const e of document.querySelectorAll('#segments input,#segments select')){if(e.classList.contains('seg-count')||e.classList.contains('seg-ryanko'))e.value='0';else if(e.classList.contains('seg-method'))e.value='深宙';else if(e.classList.contains('seg-bait'))e.value='両ダンゴ';else e.value='';}
  const confirm=document.getElementById('entryConfirmV581');if(confirm){delete confirm.dataset.savingV11790;const b=confirm.querySelector('.ec581-save');if(b){b.disabled=false;b.textContent='この内容で保存';}}
  document.getElementById('v587SaveFinishOverlay')?.classList.remove('show');
  // Form reset handlers can be bypassed by older wrappers. Reset progression at the new-trip boundary.
@@ -11052,6 +11099,20 @@ function resetNewEntryStateV11806(){
  }
  photoState=[];renderPhotos();calcEntry();updateWaterLevelVisibility();paintSpecialV11806();renderHourlyV11806();dirty=false;
  preserveEntryNext=true;
+}
+
+function rotateEntryPhotoV11806(button){
+ const card=button.closest('.photo'),i=Number(card?.dataset.i),item=photoState[i],img=card?.querySelector('img');
+ if(!item||!img?.complete||!img.naturalWidth)return;
+ const canvas=document.createElement('canvas');
+ try{
+  canvas.width=img.naturalHeight;canvas.height=img.naturalWidth;
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('画像処理を開始できませんでした');
+  ctx.translate(canvas.width,0);ctx.rotate(Math.PI/2);ctx.drawImage(img,0,0);
+  const data=canvas.toDataURL('image/png');if(data==='data:,')throw new Error('回転画像を作成できませんでした');
+  photoState[i]={...item,data};dirty=true;renderPhotos();
+ }catch(error){console.error('写真の回転に失敗しました',error);alert('写真を回転できませんでした。元の写真は変更していません。');}
+ finally{canvas.width=canvas.height=0;}
 }
 
 function prepareEntry(date){resetEntry(false);document.querySelector('[name=date]').value=date||new Date().toISOString().slice(0,10);addSegment();document.getElementById('entryTitle').textContent='新規釣行';updateWaterLevelVisibility()}
@@ -11451,6 +11512,32 @@ function validateAllTanaPairs(){
   return ok;
 }
 
+function legacySegmentRyanko806(record,segment,index){
+ if(segment.ryankoCount!=null)return Number(segment.ryankoCount)||0;
+ const events=[...(record.catchTimes||[]),...(record.specialRyanko||[])].filter(e=>e&&(e.type==='ryanko'||e.type==='specialRyanko'||Number(e.count)===2));
+ if(events.length)return events.filter(e=>Number(e.segmentIndex??(Number(e.segment||1)-1))===index).length;
+ return index===0?Number(record.ryankoCount)||0:0;
+}
+function validateMethodCounts806(){
+ for(const e of document.querySelectorAll('#segments .seg-count,#segments .seg-ryanko')){
+  const v=e.value.trim(),ok=/^[0-9]+$/.test(v)&&Number.isSafeInteger(Number(v));
+  e.setCustomValidity(ok?'':'枚数・リャンコは0以上の半角整数で入力してください。');
+  if(!ok){focusEntryErrorV11804(e);e.reportValidity();return false;}
+ }
+ return true;
+}
+function methodRyankoTotal806(){return [...document.querySelectorAll('#segments .seg-ryanko')].reduce((n,e)=>n+(Number(e.value)||0),0);}
+function removeMethodEvents806(index){
+ const f=document.getElementById('entryForm');
+ for(const name of ['catchTimesJson','specialRyanko806']){
+  const e=f.elements[name];if(!e)continue;
+  try{const events=JSON.parse(e.value||'[]').filter(x=>Number(x.segmentIndex??(Number(x.segment||1)-1))!==index).map(x=>{
+   const copy={...x};if(copy.segmentIndex>index)copy.segmentIndex--;if(copy.segment>index+1)copy.segment--;return copy;
+  });e.value=JSON.stringify(events);if(name==='catchTimesJson'&&!f.elements.editId.value)localStorage.setItem('hera_live_catch_events_v11660',e.value);
+  }catch(_e){}
+ }
+}
+
 function segmentHtml(s={}){
   let rod=normRod(s.rod||'');
   let rodName=String(s.rodName||'').trim();
@@ -11489,19 +11576,20 @@ function segmentHtml(s={}){
         <span>竿名 <span class="${rodNameRequired?'req':'opt'}">${rodNameRequired?'必須':'任意'}</span></span>
         <select class="seg-rod-name" ${rodNameRequired?'required':''} data-required-from-new="${rodNameRequired?'1':'0'}">${rodNameOptionsHtml(rod,rodName,rodNameOldOptional)}</select>
       </label>
-      <label class="seg-count-wrap">
-        <span>釣果 <span class="req">必須</span></span>
+      <div class="method-counts806"><label class="seg-count-wrap">
+        <span>枚数</span>
         <div class="count-input-wrap">
-          <input class="seg-count" type="number" min="0" step="1" required value="${s.count??0}">
+          <input class="seg-count" type="text" inputmode="numeric" pattern="[0-9]+" required value="${esc(String(s.count??0))}">
           <span class="count-unit">枚</span>
         </div>
       </label>
+      <label class="seg-ryanko-wrap"><span>リャンコ</span><div class="count-input-wrap"><input class="seg-ryanko" type="text" inputmode="numeric" pattern="[0-9]+" required value="${esc(String(s.ryankoCount??0))}"><span class="count-unit">回</span></div></label></div>
       <button type="button" class="seg-remove" onclick="removeSegment(this)">この釣り方を削除</button>
     </div>
   </div>`;
 }
 function renumberSegments(){if(window.syncPcTimeWidthV11803)window.syncPcTimeWidthV11803();const rows=[...document.querySelectorAll('.segment')],multi=rows.length>1;rows.forEach((x,i)=>{let n=x.querySelector('.seg-no');if(n)n.textContent=i+1;x.classList.toggle('has-remove',multi);let b=x.querySelector('.seg-remove');if(b)b.style.display=multi?'flex':'none'})}
-function removeSegment(btn){let rows=document.querySelectorAll('.segment');if(rows.length<=1)return;btn.closest('.segment').remove();renumberSegments();dirty=true;calcEntry()}
+function removeSegment(btn){let rows=document.querySelectorAll('.segment');if(rows.length<=1)return;removeMethodEvents806([...rows].indexOf(btn.closest('.segment')));btn.closest('.segment').remove();renumberSegments();dirty=true;calcEntry()}
 function latestRodNameForV11455(rod){
   const target=normRod(rod||'');
   if(!target)return '';
@@ -11560,7 +11648,7 @@ function bindRodNameV11251(seg){
   syncRodNameSelectV11251(seg,true);
 }
 function addSegment(s){document.getElementById('segments').insertAdjacentHTML('beforeend',segmentHtml(s));document.querySelectorAll('.seg-count').forEach(i=>i.oninput=calcEntry);document.querySelectorAll('.seg-rod,.seg-method,.seg-bait,.seg-rod-name').forEach(i=>i.oninput=()=>dirty=true);document.querySelectorAll('.seg-tana-start,.seg-tana-end').forEach(bindTanaInput);let added=[...document.querySelectorAll('.segment')].at(-1);bindRodNameV11251(added);renumberSegments();dirty=true;calcEntry()}
-function getSegments(){return [...document.querySelectorAll('.segment')].map(x=>{let tanaStart=normalizeTanaNumber(x.querySelector('.seg-tana-start')?.value||''),tanaEnd=normalizeTanaNumber(x.querySelector('.seg-tana-end')?.value||'');return {method:x.querySelector('.seg-method').value,tanaStart,tanaEnd,tana:formatTanaRange(tanaStart,tanaEnd),bait:x.querySelector('.seg-bait').value,rod:normRod(x.querySelector('.seg-rod').value),rodName:String(x.querySelector('.seg-rod-name')?.value||'').trim(),count:+x.querySelector('.seg-count').value||0}})}
+function getSegments(){return [...document.querySelectorAll('.segment')].map(x=>{let tanaStart=normalizeTanaNumber(x.querySelector('.seg-tana-start')?.value||''),tanaEnd=normalizeTanaNumber(x.querySelector('.seg-tana-end')?.value||'');return {method:x.querySelector('.seg-method').value,tanaStart,tanaEnd,tana:formatTanaRange(tanaStart,tanaEnd),bait:x.querySelector('.seg-bait').value,rod:normRod(x.querySelector('.seg-rod').value),rodName:String(x.querySelector('.seg-rod-name')?.value||'').trim(),count:+x.querySelector('.seg-count').value||0,ryankoCount:+x.querySelector('.seg-ryanko')?.value||0}})}
 function isPhoneV11803(){return !!window.heraPlaceAssets802;}
 document.documentElement.classList.toggle("app-phone803",isPhoneV11803());
 function isEditingV11803(){return !!document.getElementById('entryForm')?.elements.editId?.value;}
@@ -11583,6 +11671,7 @@ function focusEntryErrorV11804(el){
 }
 function sizeLockedV11804(input){return sizeTotalV11803()<(input?.name==='sizeMax'?1:2);}
 function validateEntryTransitionV11804(){
+  if(!validateMethodCounts806())return false;
   syncSizeRequiredByCatchV11247(sizeTotalV11803());
   if(!validateAllTanaPairs())return false;
   return validateFishSizePolicyV11248(true);
@@ -11666,7 +11755,7 @@ function validateEntrySaveV11803(){
   return confirm('未入力の項目があります。\n\n・'+missing.join('\n・')+'\n\n過去データのため未入力のまま保存できます。\nこのまま保存しますか？');
 }
 
-function calcEntry(){let seg=getSegments(),total=seg.reduce((a,s)=>a+s.count,0);document.getElementById('totalFish').textContent=fmt(total);syncSizeRequiredByCatchV11247(total);syncTimeField('start');syncTimeField('end');let a=parseMinutes(getEntryTime('start')),b=parseMinutes(getEntryTime('end')),dm=null;if(a!=null&&b!=null){if(b<a)b+=1440;dm=b-a}document.getElementById('duration').textContent=dm==null?'-':`${Math.floor(dm/60)}時間${dm%60?dm%60+'分':''}`;document.getElementById('perHour').textContent=dm>0?(total*60/dm).toFixed(2):'-'}
+function calcEntry(){if(window.paintMethodRyanko806)window.paintMethodRyanko806();let seg=getSegments(),total=seg.reduce((a,s)=>a+s.count,0);document.getElementById('totalFish').textContent=fmt(total);syncSizeRequiredByCatchV11247(total);syncTimeField('start');syncTimeField('end');let a=parseMinutes(getEntryTime('start')),b=parseMinutes(getEntryTime('end')),dm=null;if(a!=null&&b!=null){if(b<a)b+=1440;dm=b-a}document.getElementById('duration').textContent=dm==null?'-':`${Math.floor(dm/60)}時間${dm%60?dm%60+'分':''}`;document.getElementById('perHour').textContent=dm>0?(total*60/dm).toFixed(2):'-'}
 function setNow(name){let d=new Date(),sec=d.getHours()*3600+d.getMinutes()*60+d.getSeconds()+d.getMilliseconds()/1000,mins=(Math.floor((sec+150)/300)*5)%1440,t=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');setEntryTime(name,t);calcEntry();dirty=true;clearRequiredTimeError(name);if(name==='end'){window.__weatherEndFinalizedV11456=true;setTimeout(()=>{try{maybeAutoWeatherV11456()}catch(_e){}},0)}}
 function clearRequiredTimeError(name){
   let btn=document.querySelector(`.time-picker[data-name="${name}"] .time-display`);
@@ -11841,7 +11930,7 @@ function setupFishSizeInputs(){
 }
 document.addEventListener('DOMContentLoaded',()=>setTimeout(setupFishSizeInputs,0));
 function resetEntry(add=true){window.__weatherEndFinalizedV11456=false;document.getElementById('entry')?.classList.remove('entry-edit-v11399');document.getElementById('entryForm').reset();document.querySelector('[name=editId]').value='';setEntryTime('start','10:30');setEntryTime('end','16:00');clearRequiredTimeError('start');clearRequiredTimeError('end');document.getElementById('segments').innerHTML='';photoState=[];renderPhotos();document.getElementById('saveMsg').textContent='';let ws=document.getElementById('weatherStatus');if(ws)ws.textContent='';document.getElementById('entryTitle').textContent='新規釣行';setFishSizeMode('min','');setFishSizeMode('max','');dirty=false;if(add){document.querySelector('[name=date]').value=new Date().toISOString().slice(0,10);addSegment();dirty=false}calcEntry()}
-function makeRecord(fd){let o=Object.fromEntries(fd.entries());const total803=sizeTotalV11803();if(total803<2)o.sizeMin="";if(total803<1){o.sizeMax="";o.sizeLegacy="";}let segments=getSegments(),count=segments.reduce((a,s)=>a+s.count,0),dm=null,a=parseMinutes(o.start),b=parseMinutes(o.end);if(a!=null&&b!=null){if(b<a)b+=1440;dm=b-a}let point=String(o.point||o.spot||'').trim(),seat=String(o.seat||'').replace(/[０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)).replace(/\D/g,'');return norm({id:o.editId||('u:'+Date.now()+':'+Math.random().toString(36).slice(2,7)),date:o.date,year:+o.date.slice(0,4),month:+o.date.slice(5,7),place:o.place,point,spot:point,seat,start:o.start,end:o.end,time:o.start&&o.end?o.start+'～'+o.end:'',count,per_hour:dm>0?count*60/dm:null,sizeMin:normalizeFishSize(o.sizeMin||''),sizeMax:normalizeFishSize(o.sizeMax||''),size:(normalizeFishSize(o.sizeMin||'')&&normalizeFishSize(o.sizeMax||''))?(normalizeFishSize(o.sizeMin||'')+'～'+normalizeFishSize(o.sizeMax||'')):(normalizeFishSize(o.sizeMin||o.sizeMax||'')||o.sizeLegacy||''),sizeMode:((o.sizeMinMode==='実測'||o.sizeMaxMode==='実測')?'実測':''),sizeMinMode:o.sizeMinMode||'',sizeMaxMode:o.sizeMaxMode||'',hasMeasuredSize:(o.sizeMinMode==='実測'||o.sizeMaxMode==='実測'),sizeTrend:o.sizeTrend,peak:o.peak,crowd:o.crowd,satisfaction:o.satisfaction,activity:o.activity,waterLevel:o.waterLevel,totalWeightKg:String(o.totalWeightKg||'').trim(),maxWeightG:String(o.maxWeightG||'').trim(),weather:o.weather,segments,catchTimes:(window.parseCatchTimesV11660?window.parseCatchTimesV11660(o.catchTimesJson):[]),catchAnalysis:String(o.catchAnalysis||'').trim(),...(window.ryankoRecordFieldsV11796?window.ryankoRecordFieldsV11796(window.parseCatchTimesV11660(o.catchTimesJson)):{}),...specialRecordV11806(o),diary:o.diary,comment:o.diary,source_sheet:'新規'})}
+function makeRecord(fd){let o=Object.fromEntries(fd.entries());const total803=sizeTotalV11803();if(total803<2)o.sizeMin="";if(total803<1){o.sizeMax="";o.sizeLegacy="";}let segments=getSegments(),count=segments.reduce((a,s)=>a+s.count,0),dm=null,a=parseMinutes(o.start),b=parseMinutes(o.end);if(a!=null&&b!=null){if(b<a)b+=1440;dm=b-a}let point=String(o.point||o.spot||'').trim(),seat=String(o.seat||'').replace(/[０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)).replace(/\D/g,'');return norm({id:o.editId||('u:'+Date.now()+':'+Math.random().toString(36).slice(2,7)),date:o.date,year:+o.date.slice(0,4),month:+o.date.slice(5,7),place:o.place,point,spot:point,seat,start:o.start,end:o.end,time:o.start&&o.end?o.start+'～'+o.end:'',count,per_hour:dm>0?count*60/dm:null,sizeMin:normalizeFishSize(o.sizeMin||''),sizeMax:normalizeFishSize(o.sizeMax||''),size:(normalizeFishSize(o.sizeMin||'')&&normalizeFishSize(o.sizeMax||''))?(normalizeFishSize(o.sizeMin||'')+'～'+normalizeFishSize(o.sizeMax||'')):(normalizeFishSize(o.sizeMin||o.sizeMax||'')||o.sizeLegacy||''),sizeMode:((o.sizeMinMode==='実測'||o.sizeMaxMode==='実測')?'実測':''),sizeMinMode:o.sizeMinMode||'',sizeMaxMode:o.sizeMaxMode||'',hasMeasuredSize:(o.sizeMinMode==='実測'||o.sizeMaxMode==='実測'),sizeTrend:o.sizeTrend,peak:o.peak,crowd:o.crowd,satisfaction:o.satisfaction,activity:o.activity,waterLevel:o.waterLevel,totalWeightKg:String(o.totalWeightKg||'').trim(),maxWeightG:String(o.maxWeightG||'').trim(),weather:o.weather,segments,catchTimes:(window.parseCatchTimesV11660?window.parseCatchTimesV11660(o.catchTimesJson):[]),catchAnalysis:String(o.catchAnalysis||'').trim(),...(window.ryankoRecordFieldsV11796?window.ryankoRecordFieldsV11796(window.parseCatchTimesV11660(o.catchTimesJson)):{}),...specialRecordV11806(o),ryankoCount:segments.reduce((n,s)=>n+s.ryankoCount,0),...(specialPlaceV11806(o.place)&&o.specialTotal806!==''?{specialTotal:String(count)}:{}),diary:o.diary,comment:o.diary,source_sheet:'新規'})}
 document.getElementById('entryForm').onsubmit=async e=>{e.preventDefault();let f=e.target,msg=document.getElementById('saveMsg');msg.className='muted';if(!await approveSaveV11806())return;validateAllTanaPairs();finalizeAllFishSizeInputs(false);if(!validateRequiredTimes(true))return;if(!validateFishSizePolicyV11248(true))return;if(!f.reportValidity())return;let segs=[...document.querySelectorAll('.segment')];if(!segs.length){msg.textContent='釣り方を1件以上入力してください。';msg.className='save-err';return}let badRod=segs.find(x=>!x.querySelector('.seg-rod').value.trim());if(badRod&&!isEditingV11803()){badRod.querySelector('.seg-rod').focus();msg.textContent='竿の長さを選択してください。';msg.className='save-err';return}let badRodName=segs.find(x=>{let n=x.querySelector('.seg-rod-name');return n&&n.dataset.requiredFromNew==='1'&&!String(n.value||'').trim()});if(badRodName&&!isEditingV11803()){let n=badRodName.querySelector('.seg-rod-name');n.focus();msg.textContent='竿名を選択してください。';msg.className='save-err';return}let rec=makeRecord(new FormData(f));let edit=f.editId.value;if(edit){let over=load(LS.over,{});over[edit]=rec;save(LS.over,over)}else{let arr=load(LS.user,[]);arr.push(rec);save(LS.user,arr)}await savePhotos(rec.id);dirty=false;msg.textContent=('✓ 保存しました（釣行記録に反映済み）');msg.className='save-ok';showEntrySaveToast('保存しました');refresh();if(edit)finishEditV11806(edit)};
 function showDetailById(id){
   let r=allData.find(x=>x.id===id);
@@ -12782,7 +12871,7 @@ function maybeAutoWeather(){return maybeAutoWeatherV11456()}
 function photoDB(){return new Promise((res,rej)=>{let q=indexedDB.open('heraDiaryPhotos',1);q.onupgradeneeded=()=>{let db=q.result;if(!db.objectStoreNames.contains('photos'))db.createObjectStore('photos',{keyPath:'key'})};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 async function photoGetAll(id){let db=await photoDB();return new Promise((res,rej)=>{let tx=db.transaction('photos','readonly'),q=tx.objectStore('photos').getAll();q.onsuccess=()=>res(q.result.filter(x=>x.recordId===id).sort((a,b)=>a.order-b.order));q.onerror=()=>rej(q.error)})}
 async function photoPut(items,id){let db=await photoDB();let old=await photoGetAll(id);await new Promise((res,rej)=>{let tx=db.transaction('photos','readwrite'),st=tx.objectStore('photos');old.forEach(x=>st.delete(x.key));items.forEach((x,i)=>st.put({key:id+':'+i,recordId:id,order:i,data:x.data,name:x.name||''}));tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
-function renderPhotos(){let el=document.getElementById('photoPreview');el.innerHTML=photoState.map((p,i)=>`<div class="photo" draggable="true" data-i="${i}"><img src="${p.data}" onclick="lightPhoto('${p.data}')"><button type="button" onclick="removePhoto(${i})">×</button></div>`).join('');[...el.querySelectorAll('.photo')].forEach(n=>{n.ondragstart=e=>e.dataTransfer.setData('text/plain',n.dataset.i);n.ondragover=e=>e.preventDefault();n.ondrop=e=>{e.preventDefault();let a=+e.dataTransfer.getData('text/plain'),b=+n.dataset.i,[x]=photoState.splice(a,1);photoState.splice(b,0,x);renderPhotos()}})}
+function renderPhotos(){let el=document.getElementById('photoPreview');el.innerHTML=photoState.map((p,i)=>`<div class="photo" draggable="true" data-i="${i}"><img src="${p.data}" onclick="lightPhoto('${p.data}')" onload="this.parentElement.querySelector('.photo-rotate806').disabled=false"><button type="button" onclick="removePhoto(${i})">×</button><button type="button" class="photo-rotate806" onkeydown="event.stopPropagation()" disabled aria-label="写真を右に90度回転" onclick="event.preventDefault();event.stopPropagation();rotateEntryPhotoV11806(this)">↻ 右90°</button></div>`).join('');[...el.querySelectorAll('.photo')].forEach(n=>{n.ondragstart=e=>e.dataTransfer.setData('text/plain',n.dataset.i);n.ondragover=e=>e.preventDefault();n.ondrop=e=>{e.preventDefault();let a=+e.dataTransfer.getData('text/plain'),b=+n.dataset.i,[x]=photoState.splice(a,1);photoState.splice(b,0,x);renderPhotos()}})}
 function removePhoto(i){if(!confirm('この写真を削除しますか？'))return;photoState.splice(i,1);renderPhotos();dirty=true}
 document.getElementById('photoInput').onchange=e=>{let files=[...e.target.files].slice(0,Math.max(0,10-photoState.length));files.forEach(f=>{let rd=new FileReader();rd.onload=()=>{photoState.push({data:rd.result,name:f.name});renderPhotos();dirty=true};rd.readAsDataURL(f)});e.target.value=''};
 async function savePhotos(id){await photoPut(photoState,id)}async function loadEntryPhotos(id){const generation=window.__entryGeneration806;const pending=photoGetAll(id);window.__entryPhotoRead806=pending;const rows=await pending;if(generation!==window.__entryGeneration806||document.getElementById('entryForm').elements.editId.value!==String(id))return;photoState=rows.map(x=>({data:x.data,name:x.name}));renderPhotos()}async function loadDetailPhotos(id){let p=await photoGetAll(id),el=document.getElementById('detailPhotos');if(el)el.innerHTML=p.length?p.map(x=>`<div class="photo"><img src="${x.data}" onclick="lightPhoto('${x.data}')"></div>`).join(''):'<div class="detail-photo-empty">写真はまだ登録されていません</div>'}
@@ -32783,7 +32872,7 @@ document.addEventListener('click',e=>{
       +'<div class="detail-lower-grid">'
         +'<section class="detail-block detail-condition-block">'
           +'<div class="detail-block-head"><div><h3>型・状況</h3><p>魚のサイズや活性、その日の状況</p></div></div>'
-          +'<div class="detail-block-body">'+conditionHtml+(hourlyHtmlV11806(r.catchTimes)?'<div id="hourlyDetail806">'+hourlyHtmlV11806(r.catchTimes)+'</div>':'')+(window.ryankoHtmlV11796?window.ryankoHtmlV11796(r.catchTimes||[]):'')+'</div>'
+          +'<div class="detail-block-body">'+conditionHtml+(hourlyHtmlV11806(r.catchTimes)?'<div id="hourlyDetail806">'+hourlyHtmlV11806(r.catchTimes)+'</div>':'')+(window.ryankoHtmlV11796?window.ryankoHtmlV11796(r.catchTimes||[],r.ryankoCount):'')+'</div>'
         +'</section>'
         +'<section class="detail-block detail-diary-photo-block">'
           +'<div class="detail-block-head"><div><h3>日記・写真</h3><p>その日の釣りを振り返る記録</p></div></div>'
@@ -47699,8 +47788,7 @@ document.addEventListener('click',e=>{
     'seg-tana-field',
     'seg-bait-field',
     'seg-rod-field',
-    'seg-rod-name-field',
-    'seg-count-wrap'
+    'seg-rod-name-field'
   ];
 
   function rebuildOne(grid){
@@ -56185,6 +56273,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
   }
 
   function repairDefault(seg, forceNew){
+    if(specialModeV11806())return;
     if(!seg)return;
     bind(seg);
 
@@ -56518,7 +56607,8 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 (function(){
   'use strict';
 
-  var API='https://hera-iphone.vercel.app/api/sync';
+  return; /* 806 phase1: legacy Vercel sync disabled */
+  var API='';
   var KEY_NAME='hera_cloud_sync_key_v2';
   var DEVICE_NAME='hera_cloud_device_v2';
   var META_KEY='hera_cloud_record_meta_v2';
@@ -56960,7 +57050,8 @@ window.heraIPhonePageV050=async function(page){
 (function(){
   'use strict';
 
-  var API='https://hera-iphone.vercel.app/api/sync?scope=assets';
+  return; /* 806 phase1: legacy asset sync disabled */
+  var API='';
   var KEY_NAME='hera_cloud_sync_key_v2';
   var DEVICE_NAME='hera_cloud_device_v2';
 
@@ -57802,7 +57893,8 @@ window.heraIPhoneCloudPullV051=async function(){
 (function(){
   'use strict';
   var VERSION='1.1.448';
-  var API='https://hera-iphone.vercel.app/api/sync?scope=assets';
+  return; /* 806 phase1: legacy asset sync disabled */
+  var API='';
   var KEY='hera_cloud_sync_key_v2';
 
   function activeTripIds(){
@@ -58622,7 +58714,7 @@ html.pc-no-now-v11453 #entry .seg-finish-fishing-v046{
   'use strict';
 
   function isCatchInput(el){
-    return !!(el && el.matches && el.matches('#entry .seg-count'));
+    return !!(el && el.matches && el.matches('#entry .seg-count,#entry .seg-ryanko'));
   }
 
   document.addEventListener('focusin',function(e){
@@ -58639,6 +58731,7 @@ html.pc-no-now-v11453 #entry .seg-finish-fishing-v046{
   document.addEventListener('input',function(e){
     var el=e.target;
     if(!isCatchInput(el))return;
+    el.setCustomValidity('');
     if(String(el.value).trim()!=='')delete el.dataset.zeroClearedV11470;
     try{dirty=true;}catch(_e){}
     if(!window.__calcEntryRafV11790){
@@ -59531,7 +59624,6 @@ html.iphone-live-fishing-only-v529 #entry .entry-fishing-card{
 }
 
 html.iphone-live-fishing-only-v529 #entry .entry-fishing-card .entry-head-tools,
-html.iphone-live-fishing-only-v529 #entry .entry-fishing-card .seg-count-wrap,
 html.iphone-live-fishing-only-v529 #entry .entry-fishing-card .seg-start-field,
 html.iphone-live-fishing-only-v529 #entry .entry-fishing-card .seg-end-field,
 html.iphone-live-fishing-only-v529 #entry .entry-fishing-card .seg-duration,
@@ -60305,7 +60397,7 @@ html.iphone-entry-v001 #iphoneLiveV515{
       <div class="lv515-live-actions">
         <button class="lv515-btn lv515-gold" type="button" onclick="heraLiveV515.changeFishing()">釣り方を変更する</button>
         <button class="lv515-btn lv515-soft" type="button" onclick="heraLiveV515.takePhoto()">📷 へら鮒を撮影する</button>
-        <button id="lv515FinishBtn" class="lv515-btn lv515-primary wide" type="button" onclick="heraLiveV515.finish()">■ 本日の釣りを終了する</button>
+        <button id="lv515FinishBtn" class="lv515-btn lv515-primary wide" type="button" onclick="heraLiveV515.finish()">■ 枚数を記録して、本日の釣りを終了する</button>
       </div>
       <div id="lv515FinishToast" class="lv515-finish-toast" aria-live="polite" hidden></div>
       <div id="lv515ChangeConfirm" class="lv515-overlay" hidden>
@@ -60680,7 +60772,7 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
  function setSegmentEndDirect(seg,t){
    if(!seg)return;
    let en=$('.seg-end',seg);
-   if(en)en.value=t;
+   if(en){en.value=t;if(specialModeV11806()){en.dataset.v045Default="0";en.dataset.autoDefaultEndV11312="0";}}
  }
  function startFromFishingOnly(){
    if(!validateSpecialSeatV11806())return false;
@@ -60700,7 +60792,7 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
 
    /* クリック時は重い再計算やchangeイベントを発生させない。
       時刻だけ直接記録し、すぐカウンター画面へ切り替える。 */
-   if(wasRunning && rows.length>1){
+   if(wasRunning && rows.length>1 && !specialModeV11806()){
      setSegmentEndDirect(rows[rows.length-2],t);
    }
    if(!wasRunning){
@@ -60723,9 +60815,10 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
  function start(){startFromFishingOnly()}
  function plus(amount){if(specialModeV11806())return;amount=amount===2?2:1;let s=lastSeg(),inp=s&&$('.seg-count',s);if(!inp)return;inp.value=String((+inp.value||0)+amount);try{calcEntry();dirty=true}catch(_e){};saveState({running:true,total:total()});let m=$('#lv515SaveState');if(m)m.textContent='✓ '+now()+' 自動保存'}
  function minus(amount,index){if(specialModeV11806())return;amount=amount===2?2:1;let s=Number.isInteger(index)?segs()[index]:lastSeg(),inp=s&&$('.seg-count',s);if(!inp)return;inp.value=String(Math.max(0,(+inp.value||0)-amount));try{calcEntry();dirty=true}catch(_e){};saveState({running:true,total:total()})}
- function changeFishing(){showChangeFishingConfirm()}
+ function changeFishing(){if(specialModeV11806()){requestSpecialResultV11806("change",()=>window.heraLiveV515.confirmChangeFishing());return;}showChangeFishingConfirm()}
  function cancelChangeFishing(){hideChangeFishingConfirm()}
  function confirmChangeFishing(){
+   if(specialModeV11806()&&!consumeSpecialPermitV11806("change")){requestSpecialResultV11806("change",()=>window.heraLiveV515.confirmChangeFishing());return;}
    let current=lastSeg();
    if(!current){hideChangeFishingConfirm();return}
    let s=segData(current)||{};
@@ -60769,6 +60862,7 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
  },true);
  function takePhoto(){let inp=document.getElementById('photoInput');if(!inp)return;try{inp.setAttribute('capture','environment')}catch(_e){};inp.click();setTimeout(()=>{try{inp.removeAttribute('capture')}catch(_e){}},1200)}
  function finish(){
+   if(specialModeV11806()){requestSpecialResultV11806("finish",()=>window.heraLiveV515.confirmFinish());return;}
    if(!validateSpecialTotalV11806())return;
    if(finishTimer)return;
    pendingFinishAt=now();
@@ -60785,6 +60879,7 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
  }
  function cancelFinish(){hideFinishConfirm()}
  function confirmFinish(){
+   if(specialModeV11806()&&!consumeSpecialPermitV11806("finish")){requestSpecialResultV11806("finish",()=>window.heraLiveV515.confirmFinish());return;}
    if(!validateSpecialTotalV11806())return;
    if(finishTimer)return;
    let t=pendingFinishAt||now();
@@ -70994,7 +71089,8 @@ html.entry-confirm-open-v581 #iphoneHomeB619{
 (function(){
   'use strict';
 
-  var API='https://hera-iphone.vercel.app/api/sync';
+  return; /* 806 phase1: legacy Vercel sync disabled */
+  var API='';
   var KEY='hera_cloud_sync_key_v2';
   var busy=false;
 
@@ -71344,6 +71440,8 @@ html.iphone-entry-v001 #entry .v11660-auto-analysis b{
 .ryanko-record-v11796{margin:12px 0;padding:13px 15px;border:1px solid #c6a66b;border-radius:13px;
   background:linear-gradient(135deg,#fffaf0,#f1e4cc);color:#674725;font-size:14px;line-height:1.7}
 .ryanko-record-v11796 strong{font-size:16px;font-weight:900}
+/* iPhoneの満足度入力欄と左右の余白を統一する。 */
+html.iphone-entry-v001 #entry #ryankoSummaryV11796{margin-left:14px;margin-right:14px;}
 .ryanko-record-v11796 .ryanko-times{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:4px;font-variant-numeric:tabular-nums}
 </style>
 <script id="iphone-catch-time-v11660-script">
@@ -71354,7 +71452,8 @@ html.iphone-entry-v001 #entry .v11660-auto-analysis b{
   /* Missing count is a legacy single-fish event. No stored-row migration. */
   function eventCount(e){return e && (Number(e.count)===2||e.type==='ryanko')?2:1;}
   function ryankoEvents(a){return (Array.isArray(a)?a:[]).filter(function(e){return eventCount(e)===2});}
-  function ryankoHtml(a){
+  function ryankoHtml(a,total){
+    if(total!=null&&Number(total)!==ryankoEvents(a).length)return Number(total)>0?'<div class="ryanko-record-v11796"><strong>リャンコ　'+Number(total)+'回</strong></div>':'';
     var events=ryankoEvents(a);if(!events.length)return '';
     return '<div class="ryanko-record-v11796"><strong>リャンコ　'+events.length+'回</strong><div class="ryanko-times">'+events.map(function(e){
       var time=String(e.time||String(e.at||'').split('T')[1]||'');
@@ -71365,11 +71464,12 @@ html.iphone-entry-v001 #entry .v11660-auto-analysis b{
   function paintRyanko(a){
     var card=document.querySelector('#entry .entry-status-card');if(!card)return;
     var box=document.getElementById('ryankoSummaryV11796');
-    var markup=ryankoHtml(a);
+    var markup=ryankoHtml(a,methodRyankoTotal806());
     if(!markup){if(box)box.remove();return;}
     if(!box){box=document.createElement('div');box.id='ryankoSummaryV11796';card.appendChild(box);}
     if(box.innerHTML!==markup)box.innerHTML=markup;
   }
+  window.paintMethodRyanko806=function(){let a=[];try{a=JSON.parse(document.getElementById('entryForm')?.elements.catchTimesJson?.value||'[]');}catch(_e){}paintRyanko(a);};
   window.catchEventCountV11796=eventCount;
   window.ryankoHtmlV11796=ryankoHtml;
   window.ryankoRecordFieldsV11796=function(a){
@@ -71570,6 +71670,7 @@ html.iphone-entry-v001 #entry .v11660-auto-analysis b{
         var r=oldPlus.call(this,amount);
         var after=inp?Number(inp.value||0):before;
         if(after>before){
+          if(amount===2){var ri=segs()[idx]?.querySelector('.seg-ryanko');if(ri)ri.value=String((Number(ri.value)||0)+1);}
           var a=loadEvents();
           a.push({
             at:localStamp(d),
@@ -71595,7 +71696,7 @@ html.iphone-entry-v001 #entry .v11660-auto-analysis b{
         var amount=last?eventCount(last):1;
         var r=oldMinus.call(this,amount,idx);
         if(inp && Number(inp.value||0)<before){
-          if(last)a.pop();
+          if(last){a.pop();if(eventCount(last)===2){var ri=ss[idx]?.querySelector('.seg-ryanko');if(ri)ri.value=String(Math.max(0,(Number(ri.value)||0)-1));}}
           saveEvents(a);
         }
         return r;
@@ -75496,7 +75597,8 @@ button[data-target="sync"] .v11672-send-text,
 <style id="detail-title-bg-option3-v11712-style">
 
 /* 基本情報／釣り方／型・状況／日記・写真 共通 */
-#detail .detail-block-head{
+#detail .detail-block-head,
+#detail .detail-condition-block #hourlyDetail806 .hourly806 thead th{
   background:
     linear-gradient(180deg,#8b6548 0%,#745039 100%)!important;
   border-bottom:1px solid #64432f!important;
@@ -75504,11 +75606,12 @@ button[data-target="sync"] .v11672-send-text,
 }
 
 /* フォントは元の明朝体のまま、さらに太字 */
-#detail .detail-block-head h3{
+#detail .detail-block-head h3,
+#detail .detail-condition-block #hourlyDetail806 .hourly806 thead th{
   color:#fffaf2!important;
   -webkit-text-fill-color:#fffaf2!important;
   font-family:"Yu Mincho","Hiragino Mincho ProN",serif!important;
-  font-size:18px!important;
+
   font-weight:950!important;
   font-synthesis:weight!important;
   -webkit-text-stroke:.12px #fffaf2!important;
@@ -75518,6 +75621,7 @@ button[data-target="sync"] .v11672-send-text,
   filter:none!important;
 }
 
+#detail .detail-block-head h3{font-size:18px!important;}
 /* 補足文も濃背景に合わせて生成り系 */
 #detail .detail-block-head p{
   color:#f4e9df!important;
@@ -81648,6 +81752,93 @@ html.app-phone803 #entry .trip-back806{display:block;width:100%;min-height:44px;
 html.app-phone803 #entry #basicHomeBtnV11730,html.app-phone803 #entry #step4HomeBtnV11727{width:52px!important;min-width:52px!important;flex:0 0 52px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;padding:2px 0!important;}
 html.app-phone803 #entry #basicHomeBtnV11730 span,html.app-phone803 #entry #step4HomeBtnV11727 span{white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;font-size:10px!important;line-height:1.2!important;width:auto!important;}
 
+/* 806: section titles and hourly headers share one brown palette. */
+:root{--entry-heading-brown806:linear-gradient(180deg,#4a2c1f 0%,#321d15 100%);--entry-heading-ink806:#fffaf0;}
+html body #entry#entry :is(.entry-basic-head,.entry-fishing-head,.entry-weigh-head,.entry-status-head,.entry-diary-head),
+html body .hourly806 thead th{background:var(--entry-heading-brown806)!important;color:var(--entry-heading-ink806)!important;-webkit-text-fill-color:var(--entry-heading-ink806)!important;}
+html body #entry#entry :is(.entry-basic-head,.entry-fishing-head,.entry-weigh-head,.entry-status-head,.entry-diary-head) :is(h2,h3,p,small,.muted,[class$="-sub"]){color:var(--entry-heading-ink806)!important;-webkit-text-fill-color:var(--entry-heading-ink806)!important;}
+#entry #photoPreview .photo button.photo-rotate806{top:auto!important;right:4px!important;bottom:4px!important;left:auto!important;width:auto!important;min-width:70px!important;height:36px!important;min-height:36px!important;padding:0 8px!important;border-radius:8px!important;background:#543722!important;color:#fffaf0!important;-webkit-text-fill-color:#fffaf0!important;font-size:12px!important;line-height:1!important;}
+#entry #photoPreview .photo button.photo-rotate806:disabled{opacity:.5;}
+/* Keep photo, page indicator and wrapping thumbnails in separate rows. Maps are unchanged. */
+#mediaLightboxV11111.is-photo .v11111-lb-card{width:min(1080px,calc(100vw - 24px))!important;max-height:calc(100dvh - 24px)!important;gap:8px!important;}
+#mediaLightboxV11111.is-photo .v11111-lb-stage{order:1;flex:1 1 auto!important;max-width:100%!important;max-height:calc(100dvh - 250px)!important;padding:0!important;}
+#mediaLightboxV11111.is-photo .v11111-lb-img{max-width:100%!important;max-height:calc(100dvh - 250px)!important;}
+#mediaLightboxV11111.is-photo .v11112-lb-meta{order:2;position:static!important;left:auto!important;bottom:auto!important;transform:none!important;flex:0 0 auto;margin:0 0 6px!important;}
+#mediaLightboxV11111.is-photo.has-gallery .v11113-thumb-strip{order:3;display:flex!important;flex-wrap:wrap!important;justify-content:center!important;width:100%!important;height:auto!important;max-height:140px!important;overflow-x:hidden!important;overflow-y:auto!important;gap:6px!important;margin:0!important;padding:6px!important;scrollbar-gutter:auto!important;}
+#mediaLightboxV11111.is-photo .v11113-swipe-note{order:4;position:static!important;left:auto!important;bottom:auto!important;transform:none!important;margin:0!important;flex:0 0 auto;}
+@media(max-width:720px){
+ #mediaLightboxV11111.is-photo .v11111-lb-card{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;gap:6px!important;padding:8px!important;}
+ #mediaLightboxV11111.is-photo.has-gallery .v11113-thumb{flex:0 0 50px!important;}
+}
+
+#mediaLightboxV11111.is-photo .v11112-lb-prev,#mediaLightboxV11111.is-photo .v11112-lb-next{top:max(84px,calc(50% - 90px))!important;}
+
+
+/* Match the status title typography; retain the compact table font size and padding. */
+html body #entry#entry .hourly806 thead th{font-family:"Yu Mincho","Hiragino Mincho ProN",serif!important;font-weight:800!important;letter-spacing:.03em!important;}
+
+/* 806 special-place segment totals and result dialog (iPhone/preview only). */
+#specialSegmentLog806{display:none;}
+#iphoneLiveV515.special-counter806 #specialSegmentLog806{display:block;margin:14px 0;border:1px solid #dfcbb2;border-radius:18px;background:#fffbf3;overflow:hidden;}
+#iphoneLiveV515.special-counter806 #specialCounter806{gap:10px!important;}
+#iphoneLiveV515.special-counter806 #specialCounter806>section{border:1px solid #dfc7a5;border-radius:14px;overflow:hidden;}
+#iphoneLiveV515.special-counter806 .special-auto-note806{grid-column:1/-1;margin:2px 0 4px;font-size:12px;color:#75543b;line-height:1.5;}
+#iphoneLiveV515.special-counter806 #specialSegmentLog806>h2{margin:0;padding:14px;background:linear-gradient(#654127,#392114);color:#fffaf0!important;-webkit-text-fill-color:#fffaf0!important;font-family:"Yu Mincho",serif;font-size:19px;line-height:1.4;}
+#iphoneLiveV515.special-counter806 .special-timeline806{padding:14px 12px 8px 32px;}
+#iphoneLiveV515.special-counter806 .special-log806{position:relative;margin:0 0 14px;padding:13px 12px;border:1px solid #dfcfba;border-radius:13px;background:linear-gradient(#fffefa,#faf3e5);color:#412e21;}
+#iphoneLiveV515.special-counter806 .special-log806:before{content:"";position:absolute;left:-19px;top:20px;bottom:-28px;border-left:2px solid #d4c4ae;}
+#iphoneLiveV515.special-counter806 .special-log806:last-child:before{bottom:8px;}
+#iphoneLiveV515.special-counter806 .special-log806.is-current{border-color:#d59826;box-shadow:0 2px 8px #71461d0c;}
+#iphoneLiveV515.special-counter806 .special-log-marker806{position:absolute;left:-29px;top:15px;width:23px;height:23px;display:grid;place-items:center;border:2px solid #fff;border-radius:50%;background:#999184;color:#fff;font-size:12px;z-index:1;}
+#iphoneLiveV515.special-counter806 .is-current .special-log-marker806{background:#d39726;}
+.special-current-tag806{display:inline-block;padding:3px 10px;border-radius:20px;background:#edcf8a;color:#57390f;font-size:11px;font-weight:800;}
+#iphoneLiveV515.special-counter806 .special-log806 h3{font-family:"Yu Mincho",serif;font-size:17px;margin:8px 0;line-height:1.5;color:#392618!important;}
+#iphoneLiveV515.special-counter806 .special-log806 p{font-size:13px;line-height:1.5;margin:6px 0;}
+#iphoneLiveV515.special-counter806 .special-log-catch806{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid #e6d7bd;border-bottom:1px solid #e6d7bd;}
+#iphoneLiveV515.special-counter806 .special-log-catch806 strong{font-size:25px;}
+#iphoneLiveV515.special-counter806 .special-log-catch806 span{font-size:13px;}
+#iphoneLiveV515.special-counter806 .special-log806 button{width:100%;min-height:46px;margin-top:8px;padding:9px 5px;background:linear-gradient(#fff0c1,#f1d28a);border:1px solid #c7994d;border-radius:12px;color:#4c301a!important;font-size:13px;font-weight:800;}
+#iphoneLiveV515.special-counter806 #lv515Running>.lv515-card:has(#lv515Current),
+#iphoneLiveV515.special-counter806 .lv515-live-actions>button[onclick*="changeFishing"]{display:none!important;}
+#specialResultModal806{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#20170fb3;padding:12px;box-sizing:border-box;}
+#specialResultModal806[hidden]{display:none!important;}
+#specialResultModal806 .special-result-dialog806{box-sizing:border-box;width:440px;max-width:100%;max-height:calc(100dvh - 24px);overflow:auto;margin:0;border:1px solid #e1c7a5;border-radius:18px;background:#fffaf1;box-shadow:0 16px 45px #0005;color:#402919;}
+#specialResultModal806 header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 14px;background:linear-gradient(#654127,#392114);}
+#specialResultModal806 h2{font:800 20px/1.4 "Yu Mincho",serif;margin:0;color:#fffaf0!important;-webkit-text-fill-color:#fffaf0!important;}
+#specialResultModal806 header button{background:transparent;border:0;min-width:40px;min-height:40px;padding:0;font-size:28px;color:#fffaf0!important;}
+#specialResultModal806 .special-result-body806{padding:14px;}
+#specialResultDescription806{margin:0 0 14px;font-size:14px;line-height:1.7;text-align:center;}
+#specialResultModal806 .special-result-current806{border:1px solid #dfc5a1;border-radius:13px;padding:14px;background:#fffdf7;}
+#specialResultModal806 h3{font:800 17px/1.5 "Yu Mincho",serif;color:#402919;margin:8px 0;}
+#specialResultRod806{font-size:13px;padding-bottom:10px;border-bottom:1px solid #e1cfb3;}
+#specialResultModal806 label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;font-size:17px;font-weight:800;color:#402919;}
+#specialResultModal806 label>span{display:flex;align-items:center;gap:7px;}
+#specialResultModal806 input{box-sizing:border-box;width:118px;max-width:32vw;height:46px;min-height:46px;padding:5px 10px;border:1px solid #bb8f57;border-radius:10px;background:white;color:#241b14;font:700 25px/1.2 Arial,sans-serif;}
+#specialResultModal806 small{display:block;font-size:11px;line-height:1.6;color:#846e58;}
+#specialResultError806{color:#a32a20;font-size:12px;line-height:1.5;margin:4px 0;}
+#specialResultModal806 .special-result-total806{background:#f6ead3;border-radius:13px;padding:10px;margin:12px 0;}
+#specialResultModal806 .special-result-total806 h3{text-align:center;margin:0 0 8px;font-size:16px;}
+#specialResultModal806 .special-result-total806>div{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+#specialResultModal806 .special-result-total806 span{display:block;text-align:center;border:1px solid #e6d0b3;border-radius:10px;background:#fffdf8;padding:7px;font-size:13px;}
+#specialResultModal806 .special-result-total806 strong{display:block;margin-top:5px;font-size:28px;color:#24180f;}
+#specialResultModal806 #specialResultSave806{width:100%;min-height:52px;padding:12px 10px;border:1px solid #7c5335;border-radius:12px;background:linear-gradient(#654127,#392114)!important;color:#fffaf0!important;-webkit-text-fill-color:#fffaf0!important;font-size:15px;font-weight:800;line-height:1.5;}
+#specialResultModal806 .special-result-cancel806{width:100%;min-height:46px;margin:10px 0 0;padding:10px;border:1px solid #d5bd9d;border-radius:12px;background:#fffdf5;color:#503621;font-size:15px;font-weight:700;}
+
+#entry #segments .segment .method-counts806{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;grid-column:1/-1!important;width:min(100%,360px)!important;max-width:100%!important;margin-top:0!important}
+#entry #segments .segment .method-counts806>label{display:flex!important;flex-direction:column!important;gap:0!important;width:auto!important;min-width:0!important;max-width:none!important;margin:0!important;position:static!important}
+#entry #segments .segment .method-counts806 .count-input-wrap{display:flex!important;align-items:center!important;gap:0!important;width:100%!important;min-width:0!important;max-width:none!important}
+#entry #segments .segment .method-counts806 input{display:block!important;flex:1!important;width:100%!important;min-width:0!important;max-width:none!important;height:42px!important;min-height:42px!important;padding:8px 10px!important;box-sizing:border-box!important;border:1px solid #c9b596!important;border-radius:8px!important;background:#fff!important;color:#302419!important;font:inherit!important}
+#entry #segments .segment .method-counts806 .count-unit{width:32px!important;min-width:32px!important;flex:0 0 32px!important;position:static!important;font-size:14px!important;text-align:center!important}
+#entry #segments .segment .method-counts806 .seg-count-wrap::after{display:none!important}
+#entry #segments .segment .method-counts806>label{grid-column:auto!important;grid-row:auto!important;order:0!important;justify-self:stretch!important;align-self:stretch!important}
+#entry #segments .segment .method-counts806 .seg-count-wrap{grid-column:1!important}
+#entry #segments .segment .method-counts806 .seg-ryanko-wrap{grid-column:2!important}
+#entry #segments .segment .method-counts806 .count-input-wrap{border:1px solid #c9b596!important;border-radius:8px!important;background:#fff!important;padding:0!important;box-sizing:border-box!important}
+#entry #segments .segment .method-counts806 input{border:0!important;box-shadow:none!important;text-align:right!important}
+
+
+/* 新しく始める釣り方では釣果を入力しない。値と編集画面は保持する。 */
+html.iphone-live-fishing-only-v529 #entry #segments .segment .method-counts806{display:none!important}
 </style>
 <script id="release-v11806-runtime">
 (function(){
@@ -81726,6 +81917,174 @@ html.app-phone803 #entry #basicHomeBtnV11730 span,html.app-phone803 #entry #step
  const oldEdit=window.editRecord;window.editRecord=function(){window.__newTripActive806=false;window.__tripResume806=null;const r=oldEdit.apply(this,arguments);homeParts();return r;};
  homeParts();
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{homeParts();},{once:true});
+})();
+
+</script>
+<style id="supabase-phase1-style">
+html.app-phone803:has(#settings.active) .app{display:block!important;width:100%!important;margin:0!important;grid-template-columns:1fr!important;}
+html.app-phone803:has(#settings.active) .app>.side{display:none!important;}
+html.app-phone803:has(#settings.active) .app>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:12px!important;box-sizing:border-box!important;}
+html.app-phone803 #settings#settings{width:100%!important;min-width:0!important;max-width:100%!important;padding-bottom:40px!important;}
+html.app-phone803 #supabaseSync806{width:100%!important;max-width:100%!important;box-sizing:border-box!important;}
+html.app-phone803 #supabaseSync806 .sb806Actions{display:flex!important;flex-direction:column!important;align-items:stretch!important;}
+html.app-phone803 #supabaseSync806 button{width:100%!important;white-space:normal!important;}
+html.app-phone803 #supabaseSync806 input{min-width:0!important;font-size:16px!important;padding:10px!important;height:auto!important;}
+
+#pcIphoneSyncCardV11444{display:none!important}
+#supabaseSync806{margin-bottom:16px;min-width:0}
+#supabaseSync806 label{display:block;margin:12px 0}
+#supabaseSync806 input{display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:6px}
+#supabaseSync806 .sb806Actions{display:flex;gap:10px;flex-wrap:wrap}
+#supabaseSync806 button{white-space:normal;max-width:100%}
+#sb806Status{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:14px}
+#supabaseSync806 .muted{overflow-wrap:anywhere}
+</style>
+<script id="supabase-phase1-script">
+/* Phase 1: explicit PC upload / phone download only. No timers or auto sync. */
+(() => {
+  'use strict';
+  const URL_BASE='https://oqbrmjlisxyehadwdnci.supabase.co', KEY='hera_supabase_public806';
+  let session=null, role='', busy=false, draftTouched=false;
+  const $=id=>document.getElementById(id);
+  const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const phone=()=>phoneV11806()||/Android|iPad/i.test(navigator.userAgent);
+  function read(k,fallback){const s=localStorage.getItem(k);return s===null?fallback:JSON.parse(s);}
+  function stores(){
+    const user=read(LS.user,[]),over=read(LS.over,{}),trash=read(LS.trash,{});
+    if(!Array.isArray(user)||!over||Array.isArray(over)||typeof over!=='object'||!trash||Array.isArray(trash)||typeof trash!=='object')throw Error('端末の保存形式を確認してください。同期は中止しました。');
+    return {user,over,trash};
+  }
+  function validate(r){
+    if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.id!=='string'||!r.id.trim()||['__proto__','constructor','prototype'].includes(r.id))throw Error('IDが不正な記録があるため中止しました。');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!Number.isFinite(Date.parse(r.date+'T00:00:00Z'))||new Date(r.date+'T00:00:00Z').toISOString().slice(0,10)!==r.date)throw Error('日付が不正な記録があります：'+r.id);
+  }
+  function localRecords(){
+    const {user,over,trash}=stores(),m=new Map();
+    // Shared stores also contain migration/settings buckets. Never turn a bucket
+    // key into a trip ID. Validate trip identity and date before adding candidates.
+    const isTrip=r=>{
+      if(!r||typeof r!=='object'||Array.isArray(r)||!own(r,'id')||!own(r,'date')||typeof r.date!=='string'||typeof r.id!=='string'||r.id.startsWith('__'))return false;
+      try{validate(r);return true;}catch(_){return false;}
+    };
+    // norm() reconstructs segments; use original JSON instead to retain unknown fields.
+    for(const r of [...excelData,...user]){
+      // Original Excel rows have no stored id; preserve their existing idOf()
+      // identity only when all three source coordinates are present and valid.
+      const legacy=r&&typeof r==='object'&&!Array.isArray(r)&&!r.id&&typeof r.source_sheet==='string'&&r.source_sheet.trim()&&Number.isInteger(r.source_row)&&r.source_row>0&&Number.isInteger(r.source_col)&&r.source_col>0;
+      const record=legacy?{...r,id:idOf(r)}:r;
+      if(isTrip(record))m.set(record.id,{...record});
+    }
+    for(const [id,r] of Object.entries(over)){if(id.startsWith('__')||!isTrip(r))continue;if(r.id!==id)throw Error('編集記録のID不一致：'+id);m.set(id,{...(m.get(id)||{}),...r});}
+    const records=[...m.values()].filter(r=>!own(trash,r.id));records.forEach(validate);return records;
+  }
+  // Assets live in separate stores. If an unexpected embedded image is found,
+  // fail rather than silently remove an unknown record field or upload a photo.
+  function noEmbeddedAssets(records){
+    const walk=v=>{if(typeof v==='string'&&/^(?:data:image\/|data:application\/octet-stream|blob:)/i.test(v))throw Error('record内に画像・バイナリが見つかりました。項目を欠落させないため同期を中止しました。');if(v&&typeof v==='object')Object.values(v).forEach(walk);};walk(records);
+  }
+  function stable(v){return JSON.stringify(sort(v));}
+  function sort(v){if(Array.isArray(v))return v.map(sort);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,sort(v[k])]));return v;}
+  function key(){
+    const k=$('sb806Key').value.trim();
+    if(k.startsWith('sb_publishable_')&&k.length>20)return k;
+    if(k.startsWith('eyJ')){try{const p=k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');if(JSON.parse(atob(p)).role==='anon')return k;}catch(_){}}
+    throw Error('publishable key または anon keyを入力してください。secret／service_role keyは使用できません。');
+  }
+  function status(text){$('sb806Status').textContent=text;}
+  function controls(){
+    $('sb806Upload').disabled=busy||phone()||role!=='writer';
+    $('sb806Download').disabled=busy||!phone()||role!=='reader';
+    for(const id of ['sb806Login','sb806Logout','sb806Count','sb806Key','sb806Email','sb806Password'])$(id).disabled=busy;
+    $('sb806Identity').textContent=session?(role==='writer'?'PC書込用':'iPhone読取専用')+'として接続中':'未接続';
+  }
+  async function request(path,body,authenticated=true){
+    const headers={'apikey':key(),'Content-Type':'application/json'};
+    if(authenticated){if(!session||Date.now()>=session.expires)throw Error('設定画面でログインし直してください。');headers.Authorization='Bearer '+session.token;}
+    const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),90000);
+    try{
+      const r=await fetch(URL_BASE+path,{method:body===undefined?'GET':'POST',headers,body:JSON.stringify(body),cache:'no-store',credentials:'omit',signal:abort.signal});
+      if(!r.ok)throw Error('Supabase接続エラー（HTTP '+r.status+'）。キー・ログイン・SQL設定を確認してください。');
+      return await r.json();
+    }catch(e){if(e.name==='AbortError')throw Error('通信がタイムアウトしました。登録は完了している可能性があります。同じ操作を再実行して確認できます。');throw e;}finally{clearTimeout(timer);}
+  }
+  async function login(){
+    session=null;role='';const k=key(),email=$('sb806Email').value.trim(),password=$('sb806Password').value;
+    if(!email||!password)throw Error('メールアドレスとパスワードを入力してください。');
+    try{
+      const auth=await request('/auth/v1/token?grant_type=password',{email,password},false);
+      if(!auth.access_token||!auth.user?.id)throw Error('ログイン応答が不正です。');
+      session={token:auth.access_token,expires:Date.now()+(Number(auth.expires_in)||3600)*1000};
+      const rows=await request('/rest/v1/hera_sync_access806?select=access&user_id=eq.'+encodeURIComponent(auth.user.id));role=rows[0]?.access||'';
+      if(!['writer','reader'].includes(role))throw Error('このアカウントに同期権限がありません。');
+      if(phone()?role!=='reader':role!=='writer')throw Error(phone()?'iPhoneでは読取専用アカウントを使用してください。':'PCでは書込用アカウントを使用してください。');
+      localStorage.setItem(KEY,k);status('接続しました。端末の釣行：'+localRecords().length+'件。同期ボタンを押すまで送受信しません。');
+    }catch(e){session=null;role='';throw e;}finally{$('sb806Password').value='';}
+  }
+  async function upload(){
+    if(phone()||role!=='writer')throw Error('PCの書込用アカウントでのみ登録できます。');
+    const records=localRecords();if(!records.length)throw Error('送信対象が0件のため中止しました。');noEmbeddedAssets(records);
+    if(!confirm('このPCを正本として '+records.length+'件をSupabaseへ登録・更新します。PCの記録は変更しません。実行しますか？'))return;
+    status('PC '+records.length+'件を登録しています…');
+    const result=await request('/rest/v1/rpc/hera_upload806',{records});
+    if(result.accepted!==records.length||!Number.isSafeInteger(result.total)||result.total<records.length)throw Error('登録応答の件数が一致しません。再実行して確認してください。');
+    status('クラウド初期登録が完了しました\nPC：'+records.length+'件\nSupabase：'+result.total+'件\n今回登録・確認：'+result.accepted+'件（PCデータは変更していません）');
+  }
+  function applyCloud(records){
+    if(!Array.isArray(records))throw Error('取得形式が不正です。');const ids=new Set();
+    for(const r of records){validate(r);if(ids.has(r.id))throw Error('取得データに重複IDがあります。');ids.add(r.id);}noEmbeddedAssets(records);
+    const s=stores(),existing=new Map(localRecords().map(r=>[r.id,r])),over={...s.over};
+    let added=0,updated=0,unchanged=0,trashed=0;
+    for(const r of records){if(own(s.trash,r.id)){trashed++;continue;}const old=existing.get(r.id),merged={...(old||{}),...r};if(old&&stable(old)===stable(merged)){unchanged++;continue;}if(old)updated++;else added++;
+      // Keep local-only fields; cloud values win on collisions. No store is cleared.
+      Object.defineProperty(over,r.id,{value:merged,enumerable:true,writable:true,configurable:true});
+    }
+    // One atomic localStorage write: quota/security failure preserves original data.
+    if(added||updated)localStorage.setItem(LS.over,JSON.stringify(over));
+    return {added,updated,unchanged,trashed};
+  }
+  function redraw(){
+    // Some legacy refresh paths throw before later renderers; complete each independently.
+    allData=activeData();const warnings=[];
+    for(const fn of [renderHome,setupChoices,renderCalendar,renderSearch,renderAnalysis,renderPlaces,renderTrash,window.renderIPhoneHomeV619,window.renderRecentReferenceV11622]){
+      if(typeof fn==='function')try{fn();}catch(e){warnings.push(e.message);}
+    }
+    return warnings;
+  }
+  function pendingEntry(){
+    // Legacy startup creates empty segments and sets dirty=true even without user input.
+    const edit=document.getElementById('entryForm')?.elements.editId?.value;
+    return !!(window.__newTripActive806||window.heraLiveV515?.isRunning()||(dirty&&(edit||draftTouched)));
+  }
+  async function download(){
+    if(!phone()||role!=='reader')throw Error('iPhoneの読取専用アカウントで取得してください。');
+    if(pendingEntry())throw Error('入力・釣行中です。記録を保存してから取得してください。');
+    status('クラウドの全釣行を取得しています…');
+    const data=await request('/rest/v1/rpc/hera_download806',{});
+    if(!Array.isArray(data.records)||data.count!==data.records.length)throw Error('取得件数が一致しません。端末データは変更していません。');
+    if(pendingEntry())throw Error('取得中に入力が始まったため反映を中止しました。');
+    const result=applyCloud(data.records),warnings=redraw();
+    status('クラウド同期が完了しました\n取得：'+data.count+'件\n追加：'+result.added+'件\n更新：'+result.updated+'件\n変更なし：'+result.unchanged+'件\nゴミ箱のため保持：'+result.trashed+'件\n端末合計：'+localRecords().length+'件'+(warnings.length?'\n記録は反映済みですが、一部画面の再描画で既存エラーがありました。画面を開き直してください。':''));
+  }
+  async function run(fn){if(busy)return;busy=true;controls();try{await fn();}catch(e){status('同期を完了できませんでした\n'+e.message);}finally{busy=false;controls();}}
+  function mount(){
+    if($('supabaseSync806'))return;
+    const card=document.createElement('div');card.id='supabaseSync806';card.className='card';
+    card.innerHTML='<h2>Supabaseクラウド同期</h2><p>第1段階：PC → クラウド → iPhone。釣行記録だけを手動で同期します。写真は対象外です。</p><p class="muted">接続先：oqbrmjlisxyehadwdnci.supabase.co</p><label>ブラウザ用 publishable / anon key<input id="sb806Key" type="password" autocomplete="off" placeholder="sb_publishable_…"></label><label>同期用アカウントのメールアドレス<input id="sb806Email" type="email" autocomplete="username" autocapitalize="off"></label><label>パスワード<input id="sb806Password" type="password" autocomplete="current-password"></label><p class="muted">PCは書込用、iPhoneは読取専用アカウントでログインしてください。パスワードは保存しません。ページの再読み込みでログアウトします。</p><div class="sb806Actions"><button type="button" class="secondary" id="sb806Login">ログイン・接続確認</button><button type="button" class="secondary" id="sb806Logout">ログアウト</button><button type="button" class="secondary" id="sb806Count">端末の件数を確認</button></div><p id="sb806Identity"></p><div class="sb806Actions"><button type="button" class="primary" id="sb806Upload">PCの最新データをクラウドへ初期登録</button><button type="button" class="primary" id="sb806Download">クラウドから最新データを取得</button></div><p id="sb806Status" role="status" aria-live="polite">初回は付属のSupabase設定手順に従ってSQLとアカウントを設定してください。</p>';
+    $('settings').insertBefore(card,$('backupNotice'));
+    if(phone()){const back=document.createElement('button');back.type='button';back.className='secondary';back.textContent='ホームへ戻る';back.onclick=()=>openIPhoneHomeV619();$('settings').querySelector('.page-head').appendChild(back);}
+    $('sb806Key').value=localStorage.getItem(KEY)||'';
+    $('sb806Login').onclick=()=>run(login);$('sb806Upload').onclick=()=>run(upload);$('sb806Download').onclick=()=>run(download);
+    $('sb806Count').onclick=()=>run(()=>status('端末の有効な全釣行：'+localRecords().length+'件（ID重複を除く／ゴミ箱を除く）'));
+    $('sb806Logout').onclick=()=>{session=null;role='';$('sb806Password').value='';status('ログアウトしました。');controls();};
+    $('sb806Key').oninput=()=>{session=null;role='';controls();};controls();
+  }
+  // Old Vercel entry points are disabled; existing daily JSON buttons remain intact.
+  const disabled=()=>{goPage('settings');$('supabaseSync806')?.scrollIntoView();};
+  window.runPcSyncV11444=window.runPcSyncV11446=window.testCloudConnectionV11659=window.heraInitialCloudSyncV049=disabled;
+  for(const obj of [window.heraCloudSync,window.heraAssetSyncV052])if(obj)for(const name of ['syncNow','pull','push','pushAll','pullAll','pushPhotosOnly'])if(typeof obj[name]==='function')obj[name]=async()=>false;
+  window.heraSupabase806={localRecords,applyCloud,upload,download};
+  document.getElementById('entryForm')?.addEventListener('input',e=>{if(e.isTrusted)draftTouched=true;});
+  mount();
 })();
 
 </script>
