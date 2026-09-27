@@ -10845,7 +10845,33 @@ function fishSizeModeLabel(r){
 }
 
 function norm(r){r={...r};applyConfirmedSeatV11806(r);let __sizeMeta=inferLegacySizeModes(r);r.sizeMinMode=r.sizeMinMode||__sizeMeta.minMode;r.sizeMaxMode=r.sizeMaxMode||__sizeMeta.maxMode;r.sizeMode=(r.sizeMinMode==='実測'||r.sizeMaxMode==='実測')?'実測':(r.sizeMode||'');r.hasMeasuredSize=r.sizeMode==='実測';r.id=idOf(r);r.place=normPlace(r.place);r.spot=normSpot(r.place,r.spot);r.rod=normRod(r.rod);r.methodCategory=methods.includes(r.methodCategory)?r.methodCategory:methodCat(r.methodCategory||r.method);r.baitCategory=baits.includes(r.baitCategory)?r.baitCategory:baitCat(r.baitCategory||r.bait);r.diary=r.diary??r.comment??'';r.year=Number(r.year||String(r.date).slice(0,4));r.month=Number(r.month||String(r.date).slice(5,7));if(!r.segments||!r.segments.length)r.segments=[{method:r.methodCategory||'',bait:r.baitCategory||'',rod:r.rod||'',count:Number(r.count)||0}];r.segments=(r.segments||[]).map((s,index)=>{let tp=parseTanaRange(s.tana||'');let tanaStart=normalizeTanaNumber(s.tanaStart??tp.start),tanaEnd=normalizeTanaNumber(s.tanaEnd??tp.end);return {method:methods.includes(s.method)?s.method:methodCat(s.method)||r.methodCategory||'',tanaStart,tanaEnd,tana:formatTanaRange(tanaStart,tanaEnd),bait:baits.includes(s.bait)?s.bait:baitCat(s.bait)||r.baitCategory||'',rod:normRod(s.rod||r.rod||''),rodName:legacyRodNameForDateV11301(s.rod||r.rod||'',r.date,String(s.rodName||'').trim()),count:Number(s.count)||0,ryankoCount:legacySegmentRyanko806(r,s,index)}});if(r.count==null)r.count=r.segments.reduce((a,s)=>a+(Number(s.count)||0),0);let dm=durationMin(r);if((r.per_hour==null||!Number.isFinite(+r.per_hour))&&dm>0)r.per_hour=Number(r.count)*60/dm;return r}
-function activeData(){let over=load(LS.over,{}),trash=load(LS.trash,{}),user=load(LS.user,[]);let source=[...excelData,...user],ids=new Set(source.map(idOf));for(const [id,r] of Object.entries(over))if(!ids.has(id))source.push({...r,id});let base=[...new Map(source.map(r=>[idOf(r),r])).values()].map(norm).map(r=>Object.prototype.hasOwnProperty.call(over,r.id)?norm(over[r.id]):r).filter(r=>!trash[r.id]);return base}
+// Shared read-only boundary for home, diary, recent and cloud transfers.
+function internalTripKey806(id){
+  return typeof id!=='string'||id.startsWith('__')||id.startsWith('deletedPhotos:')||id.startsWith('hera_supabase_')||id==='heraCloudState806'||/^x:(?:undefined|null|NaN):(?:undefined|null|NaN):(?:undefined|null|NaN)$/.test(id)||/^(?:up|down|trip):[a-f0-9]{8}-[a-f0-9-]{27}$/i.test(id);
+}
+function validTrip806(r,key){
+  if(!r||typeof r!=='object'||Array.isArray(r)||!Object.prototype.hasOwnProperty.call(r,'id')||!Object.prototype.hasOwnProperty.call(r,'date'))return false;
+  if(typeof r.id!=='string'||!r.id.trim()||internalTripKey806(r.id)||['undefined','null','NaN','constructor','prototype'].includes(r.id))return false;
+  if(key!==undefined&&(internalTripKey806(key)||key!==r.id))return false;
+  if(typeof r.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(r.date))return false;
+  const t=Date.parse(r.date+'T00:00:00Z');
+  return Number.isFinite(t)&&new Date(t).toISOString().slice(0,10)===r.date;
+}
+function collectValidTrips806(base,user,over,trash){
+  const records=new Map(),own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  for(const r of [...base,...user]){
+    // Embedded Excel records retain their existing source-coordinate IDs.
+    const legacy=r&&typeof r==='object'&&!Array.isArray(r)&&!r.id&&typeof r.source_sheet==='string'&&r.source_sheet.trim()&&Number.isInteger(r.source_row)&&r.source_row>0&&Number.isInteger(r.source_col)&&r.source_col>0;
+    const candidate=legacy?{...r,id:idOf(r)}:r;
+    if(validTrip806(candidate))records.set(candidate.id,{...candidate});
+  }
+  for(const [id,r] of Object.entries(over)){
+    if(validTrip806(r,id))records.set(id,{...(records.get(id)||{}),...r});
+  }
+  return [...records.values()].filter(r=>!own(trash,r.id));
+}
+
+function activeData(){return collectValidTrips806(excelData,load(LS.user,[]),load(LS.over,{}),load(LS.trash,{})).map(norm)}
 let allData=[];let currentMapPlace='';let photoState=[];let dirty=false;let calDate=new Date();let homeCalDate=new Date();let homeFeaturedPlace='丸堀';let mapSelectForEntry=false;let preserveEntryNext=false;let searchExactDate='';let mapState={scale:1,panX:0,panY:0,imgW:1,imgH:1,stageW:1,stageH:1,padL:0,padR:0,padT:0,padB:0,edit:false,pending:null,pan:false,dragPin:null,moved:false,lastX:0,lastY:0};
 function refresh(){allData=activeData();renderHome();setupChoices();renderCalendar();if(!document.documentElement.classList.contains('search-booting-v1146'))renderSearch();renderAnalysis();renderPlaces();renderTrash()}
 function goPage(id){let __fromPage=document.querySelector('.page.active')?.id||'';if(id==='entry'&&__fromPage&&__fromPage!=='entry')window.__entryReturnPageV11307=__fromPage;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='entry'&&!document.querySelector('[name=editId]').value&&!preserveEntryNext)prepareEntry();if(id==='entry')preserveEntryNext=false;if(id==='calendar')renderCalendar();if(id==='search'&&!document.documentElement.classList.contains('search-booting-v1146'))renderSearch();if(id==='analysis')renderAnalysis();if(id==='places'){if(!mapSelectForEntry){document.getElementById('places')?.classList.remove('map-select-active');}renderPlaces();}if(id==='trash')renderTrash()}
@@ -11171,7 +11197,7 @@ function wirePlacePhotoDragDelete(){
     renderHome();
   });
 }
-function renderHome(){const now=new Date(),y=now.getFullYear(),rows=allData.filter(r=>r.year===y),fish=rows.reduce((a,r)=>a+(+r.count||0),0),yearBest=rows.length?Math.max(...rows.map(r=>+r.count||0)):0,yearBestRow=rows.filter(r=>(+r.count||0)===yearBest).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null,maru=rows.filter(r=>r.place==='丸堀'),maruFish=maru.reduce((a,r)=>a+(+r.count||0),0),maruBest=maru.length?Math.max(...maru.map(r=>+r.count||0)):0,maruBestRow=maru.filter(r=>(+r.count||0)===maruBest).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null;document.getElementById('todayLabel').textContent=now.toLocaleDateString('ja-JP');let overallTitle=document.getElementById('overallSummaryTitle');if(overallTitle)overallTitle.innerHTML=`<span class="summary-title-main">全体</span><span class="summary-title-divider" aria-hidden="true"></span><span class="summary-title-stack"><span class="summary-title-year-big">${y}</span><span class="summary-title-season">SEASON</span></span>`;let maruTitle=document.getElementById('maruboriSummaryTitle');if(maruTitle)maruTitle.innerHTML=`<span class="summary-title-main">丸堀</span><span class="summary-title-divider" aria-hidden="true"></span><span class="summary-title-stack"><span class="summary-title-year-big">${y}</span><span class="summary-title-season">SEASON</span></span>`;document.getElementById('kYearSummary').innerHTML=`<div class="summary-metric"><span class="metric-label">釣行回数</span><span class="metric-value">${fmt(rows.length)}<span class="unit">回</span></span></div><div class="summary-metric"><span class="metric-label">総釣果</span><span class="metric-value">${fmt(fish)}<span class="unit">枚</span></span></div><div class="summary-metric"><span class="metric-label">平均</span><span class="metric-value">${rows.length?(fish/rows.length).toFixed(1):'0'}<span class="unit">枚</span></span></div><div class="summary-metric best-tip" data-tip="${esc(yearBestRow?String(yearBestRow.date||'').replace(/-/g,'/')+'　'+(yearBestRow.place||'-'):'記録なし')}" title="${esc(yearBestRow?String(yearBestRow.date||'').replace(/-/g,'/')+'　'+(yearBestRow.place||'-'):'記録なし')}"><span class="metric-label">最高釣果</span><span class="metric-value">${fmt(yearBest)}<span class="unit">枚</span></span></div>`;document.getElementById('kMaruboriSummary').innerHTML=`<div class="summary-metric"><span class="metric-label">釣行回数</span><span class="metric-value">${fmt(maru.length)}<span class="unit">回</span></span></div><div class="summary-metric"><span class="metric-label">総釣果</span><span class="metric-value">${fmt(maruFish)}<span class="unit">枚</span></span></div><div class="summary-metric"><span class="metric-label">平均</span><span class="metric-value">${maru.length?(maruFish/maru.length).toFixed(1):'0'}<span class="unit">枚</span></span></div><div class="summary-metric best-tip" data-tip="${esc(maruBestRow?String(maruBestRow.date||'').replace(/-/g,'/')+'　'+(maruBestRow.place||'-'):'記録なし')}" title="${esc(maruBestRow?String(maruBestRow.date||'').replace(/-/g,'/')+'　'+(maruBestRow.place||'-'):'記録なし')}"><span class="metric-label">最高釣果</span><span class="metric-value">${fmt(maruBest)}<span class="unit">枚</span></span></div>`;let sorted=[...allData].sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('recent').innerHTML=sorted.slice(0,12).map(r=>{let d=new Date(r.date),yy=r.year||d.getFullYear(),md=`${r.month||d.getMonth()+1}/${r.day||d.getDate()}`,wd=['日','月','火','水','木','金','土'][d.getDay()];return `<div class="recent-card-item ${r.count===0?'zero':''}" onclick="showDetailById('${r.id}')"><div class="recent-date-col"><span class="recent-year">${yy}</span><span class="recent-md">${md}</span><span class="recent-wday">(${wd})</span></div><div class="recent-place-photo" data-home-trip-photo-id="${esc(r.id)}">${homePlacePhotoHtml(r)}</div><div class="recent-main"><div class="recent-title-row"><b class="recent-place-name ${String(r.place||'').length>10?'name-xl':String(r.place||'').length>7?'name-long':''}">${esc(r.place)}</b><span class="recent-chip">${esc(r.spot||'釣座未設定')}</span></div></div><div class="recent-stats"><div class="recent-stat"><span class="lab">釣果</span><span class="num">${fmt(+r.count||0)}<small>枚</small></span></div><div class="recent-stat"><span class="lab">平均</span><span class="num">${Number.isFinite(+r.per_hour)?(+r.per_hour).toFixed(1):'-'}<small>枚/時</small></span></div></div><div class="recent-arrow">›</div></div>`}).join('')||'<div class="muted">記録なし</div>';let photoMap=placePhotos(),photoPlaces=Object.keys(photoMap).filter(Boolean),allPlaces=[...new Set(allData.map(r=>r.place).filter(Boolean))],featuredCandidates=allPlaces.length?allPlaces:photoPlaces;homeFeaturedPlace=featuredCandidates.length?featuredCandidates[Math.floor(Math.random()*featuredCandidates.length)]:'丸堀';let featuredYearRows=rows.filter(r=>r.place===homeFeaturedPlace),featuredAllRows=allData.filter(r=>r.place===homeFeaturedPlace);if(!featuredAllRows.length&&allData.length){homeFeaturedPlace=allData[0].place;featuredYearRows=rows.filter(r=>r.place===homeFeaturedPlace);featuredAllRows=allData.filter(r=>r.place===homeFeaturedPlace)}let maruPhoto=placePhotos()['丸堀']||'';let maruCard=document.querySelector('.summary-marubori');if(maruCard)maruCard.style.setProperty('--marubori-photo',maruPhoto?`url(${JSON.stringify(maruPhoto).slice(1,-1)})`:'none');let homePlaceCard=document.querySelector('.home-place-card');let featuredPhoto=placePhotos()[homeFeaturedPlace]||'';if(homePlaceCard)homePlaceCard.style.setProperty('--home-place-photo',featuredPhoto?`url(${JSON.stringify(featuredPhoto).slice(1,-1)})`:'none');renderHomePlaceInfo(featuredYearRows,featuredAllRows,homeFeaturedPlace,y);renderHomeMonthCalendar(homeCalDate);setTimeout(fitHomeRecentToRightStack,0)}
+function renderHome(){allData=allData.filter(r=>validTrip806(r));const now=new Date(),y=now.getFullYear(),rows=allData.filter(r=>r.year===y),fish=rows.reduce((a,r)=>a+(+r.count||0),0),yearBest=rows.length?Math.max(...rows.map(r=>+r.count||0)):0,yearBestRow=rows.filter(r=>(+r.count||0)===yearBest).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null,maru=rows.filter(r=>r.place==='丸堀'),maruFish=maru.reduce((a,r)=>a+(+r.count||0),0),maruBest=maru.length?Math.max(...maru.map(r=>+r.count||0)):0,maruBestRow=maru.filter(r=>(+r.count||0)===maruBest).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null;document.getElementById('todayLabel').textContent=now.toLocaleDateString('ja-JP');let overallTitle=document.getElementById('overallSummaryTitle');if(overallTitle)overallTitle.innerHTML=`<span class="summary-title-main">全体</span><span class="summary-title-divider" aria-hidden="true"></span><span class="summary-title-stack"><span class="summary-title-year-big">${y}</span><span class="summary-title-season">SEASON</span></span>`;let maruTitle=document.getElementById('maruboriSummaryTitle');if(maruTitle)maruTitle.innerHTML=`<span class="summary-title-main">丸堀</span><span class="summary-title-divider" aria-hidden="true"></span><span class="summary-title-stack"><span class="summary-title-year-big">${y}</span><span class="summary-title-season">SEASON</span></span>`;document.getElementById('kYearSummary').innerHTML=`<div class="summary-metric"><span class="metric-label">釣行回数</span><span class="metric-value">${fmt(rows.length)}<span class="unit">回</span></span></div><div class="summary-metric"><span class="metric-label">総釣果</span><span class="metric-value">${fmt(fish)}<span class="unit">枚</span></span></div><div class="summary-metric"><span class="metric-label">平均</span><span class="metric-value">${rows.length?(fish/rows.length).toFixed(1):'0'}<span class="unit">枚</span></span></div><div class="summary-metric best-tip" data-tip="${esc(yearBestRow?String(yearBestRow.date||'').replace(/-/g,'/')+'　'+(yearBestRow.place||'-'):'記録なし')}" title="${esc(yearBestRow?String(yearBestRow.date||'').replace(/-/g,'/')+'　'+(yearBestRow.place||'-'):'記録なし')}"><span class="metric-label">最高釣果</span><span class="metric-value">${fmt(yearBest)}<span class="unit">枚</span></span></div>`;document.getElementById('kMaruboriSummary').innerHTML=`<div class="summary-metric"><span class="metric-label">釣行回数</span><span class="metric-value">${fmt(maru.length)}<span class="unit">回</span></span></div><div class="summary-metric"><span class="metric-label">総釣果</span><span class="metric-value">${fmt(maruFish)}<span class="unit">枚</span></span></div><div class="summary-metric"><span class="metric-label">平均</span><span class="metric-value">${maru.length?(maruFish/maru.length).toFixed(1):'0'}<span class="unit">枚</span></span></div><div class="summary-metric best-tip" data-tip="${esc(maruBestRow?String(maruBestRow.date||'').replace(/-/g,'/')+'　'+(maruBestRow.place||'-'):'記録なし')}" title="${esc(maruBestRow?String(maruBestRow.date||'').replace(/-/g,'/')+'　'+(maruBestRow.place||'-'):'記録なし')}"><span class="metric-label">最高釣果</span><span class="metric-value">${fmt(maruBest)}<span class="unit">枚</span></span></div>`;let sorted=[...allData].sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('recent').innerHTML=sorted.slice(0,12).map(r=>{let d=new Date(r.date),yy=r.year||d.getFullYear(),md=`${r.month||d.getMonth()+1}/${r.day||d.getDate()}`,wd=['日','月','火','水','木','金','土'][d.getDay()];return `<div class="recent-card-item ${r.count===0?'zero':''}" onclick="showDetailById('${r.id}')"><div class="recent-date-col"><span class="recent-year">${yy}</span><span class="recent-md">${md}</span><span class="recent-wday">(${wd})</span></div><div class="recent-place-photo" data-home-trip-photo-id="${esc(r.id)}">${homePlacePhotoHtml(r)}</div><div class="recent-main"><div class="recent-title-row"><b class="recent-place-name ${String(r.place||'').length>10?'name-xl':String(r.place||'').length>7?'name-long':''}">${esc(r.place)}</b><span class="recent-chip">${esc(r.spot||'釣座未設定')}</span></div></div><div class="recent-stats"><div class="recent-stat"><span class="lab">釣果</span><span class="num">${fmt(+r.count||0)}<small>枚</small></span></div><div class="recent-stat"><span class="lab">平均</span><span class="num">${Number.isFinite(+r.per_hour)?(+r.per_hour).toFixed(1):'-'}<small>枚/時</small></span></div></div><div class="recent-arrow">›</div></div>`}).join('')||'<div class="muted">記録なし</div>';let photoMap=placePhotos(),photoPlaces=Object.keys(photoMap).filter(Boolean),allPlaces=[...new Set(allData.map(r=>r.place).filter(Boolean))],featuredCandidates=allPlaces.length?allPlaces:photoPlaces;homeFeaturedPlace=featuredCandidates.length?featuredCandidates[Math.floor(Math.random()*featuredCandidates.length)]:'丸堀';let featuredYearRows=rows.filter(r=>r.place===homeFeaturedPlace),featuredAllRows=allData.filter(r=>r.place===homeFeaturedPlace);if(!featuredAllRows.length&&allData.length){homeFeaturedPlace=allData[0].place;featuredYearRows=rows.filter(r=>r.place===homeFeaturedPlace);featuredAllRows=allData.filter(r=>r.place===homeFeaturedPlace)}let maruPhoto=placePhotos()['丸堀']||'';let maruCard=document.querySelector('.summary-marubori');if(maruCard)maruCard.style.setProperty('--marubori-photo',maruPhoto?`url(${JSON.stringify(maruPhoto).slice(1,-1)})`:'none');let homePlaceCard=document.querySelector('.home-place-card');let featuredPhoto=placePhotos()[homeFeaturedPlace]||'';if(homePlaceCard)homePlaceCard.style.setProperty('--home-place-photo',featuredPhoto?`url(${JSON.stringify(featuredPhoto).slice(1,-1)})`:'none');renderHomePlaceInfo(featuredYearRows,featuredAllRows,homeFeaturedPlace,y);renderHomeMonthCalendar(homeCalDate);setTimeout(fitHomeRecentToRightStack,0)}
 function renderHomePlaceInfo(yearRows,allRows,placeName,year){let el=document.getElementById('homePlaceInfo');if(!el)return;let fullList=allRows||[],sorted=[...fullList].sort((a,b)=>b.date.localeCompare(a.date)),fish=fullList.reduce((a,r)=>a+(+r.count||0),0),best=fullList.length?Math.max(...fullList.map(r=>+r.count||0)):0,bestRow=fullList.filter(r=>(+r.count||0)===best).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0]||null,spots={},avg=fullList.length?(fish/fullList.length).toFixed(1):'0';fullList.forEach(r=>{if(r.spot)spots[r.spot]=(spots[r.spot]||0)+1});let fav=Object.entries(spots).sort((a,b)=>b[1]-a[1])[0]?.[0]||'未設定';let latest=sorted[0]?.date||'-';let bestTip=bestRow?String(bestRow.date||'').replace(/-/g,'/')+'　'+(bestRow.place||'-'):'記録なし';let title=document.querySelector('.home-place-card-head h2');if(title)title.textContent=placeName||'丸堀';el.innerHTML=`<div class="home-place-metric"><span>釣行回数</span><b>${fmt(fullList.length)}<small>回</small></b></div><div class="home-place-metric"><span>総釣果</span><b>${fmt(fish)}<small>枚</small></b></div><div class="home-place-metric"><span>平均</span><b>${avg}<small>枚</small></b></div><div class="home-place-metric best-tip" data-tip="${esc(bestTip)}" title="${esc(bestTip)}"><span>最高釣果</span><b>${fmt(best)}<small>枚</small></b></div><div class="home-place-detail"><span>最近の釣行</span><b>${esc(latest)}</b></div><div class="home-place-detail"><span>よく使う釣座</span><b>${esc(fav)}</b></div>`}
 function openHomePlaceInfo(){goPage('places');setTimeout(()=>{let target=homeFeaturedPlace||'丸堀';let btn=[...document.querySelectorAll('.place-row button')].find(b=>b.closest('.place-row')?.textContent.includes(target));if(btn)btn.click()},0)}
 function renderHomeMonthCalendar(baseDate=new Date()){let y=baseDate.getFullYear(),m=baseDate.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),today=new Date(),by={},monthRows=allData.filter(r=>r.year===y&&r.month===m+1);monthRows.forEach(r=>(by[r.date]??=[]).push(r));let startPad=first.getDay(),cellCount=Math.ceil((startPad+last.getDate())/7)*7,prevLast=new Date(y,m,0).getDate();let html='<div class="home-cal-panel"><div class="home-cal-dow">'+['日','月','火','水','木','金','土'].map((d,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${d}</span>`).join('')+'</div><div class="home-cal-grid">';for(let cell=0;cell<cellCount;cell++){let dayNum,dateObj,otherCls='',showNum;if(cell<startPad){showNum=prevLast-startPad+cell+1;dateObj=new Date(y,m-1,showNum);otherCls=' other-month prev-month'}else if(cell>=startPad+last.getDate()){showNum=cell-(startPad+last.getDate())+1;dateObj=new Date(y,m+1,showNum);otherCls=' other-month next-month'}else{showNum=cell-startPad+1;dateObj=new Date(y,m,showNum)}let iso=`${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`,cnt=(by[iso]||[]).length,isToday=today.toDateString()===dateObj.toDateString(),dow=dateObj.getDay();html+=`<button type="button" class="home-cal-day${otherCls} ${cnt?'has-trip':''} ${isToday?'today':''} ${dow===0?'sun':dow===6?'sat':''}" onclick="calendarClick('${iso}')" data-tip="${cnt?esc([...new Set((by[iso]||[]).map(r=>r.place).filter(Boolean))].join(' / ')||'釣行記録'):'＋ 新規入力を開く'}"><span class="day-num">${showNum}</span>${cnt?'<i class="trip-dot"></i>':''}${cnt>1?`<small>${cnt}</small>`:''}</button>`}html+='</div></div><div class="home-cal-footer"><div class="home-cal-legend"><i></i><span>釣行日</span></div></div>';document.getElementById('homeMonthCalendar').innerHTML=html;document.getElementById('monthSummary').textContent=`${y}年 ${m+1}月`}
@@ -11357,7 +11383,7 @@ function renderSearch(){
       me=document.getElementById('fMethod').value;
 
   let __sortV11341=(document.getElementById('searchSortV11341')?.value||'desc');
-  let rows=allData.filter(r=>(!searchExactDate||r.date===searchExactDate)&&(!p||r.place===p)&&(!ym||r.date.startsWith(ym))&&(!me||(r.segments||[]).some(s=>s.method===me)||r.methodCategory===me)).sort((a,b)=>__sortV11341==='asc'?a.date.localeCompare(b.date):b.date.localeCompare(a.date));
+  let rows=allData.filter(r=>validTrip806(r)&&(!searchExactDate||r.date===searchExactDate)&&(!p||r.place===p)&&(!ym||r.date.startsWith(ym))&&(!me||(r.segments||[]).some(s=>s.method===me)||r.methodCategory===me)).sort((a,b)=>__sortV11341==='asc'?a.date.localeCompare(b.date):b.date.localeCompare(a.date));
 
   document.getElementById('resultCount').textContent=(searchExactDate?searchExactDate+' / ':'')+'全'+fmt(rows.length)+'件';
 
@@ -66176,7 +66202,7 @@ html.v619-home-open #iphoneMiniNavV050{
   function recentRows(){
     try{
       if(typeof allData==='undefined' || !Array.isArray(allData))return [];
-      return allData.slice().filter(function(r){return r&&r.date}).sort(function(a,b){
+      return allData.slice().filter(function(r){return validTrip806(r)}).sort(function(a,b){
         return String(b.date).localeCompare(String(a.date));
       }).slice(0,3);
     }catch(_e){return []}
@@ -66742,7 +66768,7 @@ html.v619-iphone-ui #iphoneHomeB619{
 
     var outOrder=outboxSavedMap();
 
-    rows=rows.filter(function(r){return r&&r.date}).slice();
+    rows=rows.filter(function(r){return validTrip806(r)}).slice();
     rows.sort(function(a,b){
       var sa=Number(a._savedAt)||outOrder.get(String(a.id||''))||0;
       var sb=Number(b._savedAt)||outOrder.get(String(b.id||''))||0;
@@ -67169,7 +67195,7 @@ html.v619-iphone-ui #iphoneHomeB619{
   function rows(){
     try{
       if(!Array.isArray(allData))return [];
-      return allData.slice().filter(function(r){return r&&r.date}).sort(function(a,b){
+      return allData.slice().filter(function(r){return validTrip806(r)}).sort(function(a,b){
         return String(b.date).localeCompare(String(a.date));
       }).slice(0,3);
     }catch(_e){return []}
@@ -69187,7 +69213,7 @@ html.v619-home-open #iphoneHomeB619 .ih619-body{
     try{
       if(!Array.isArray(allData)) return [];
       return allData.slice()
-        .filter(function(r){return r&&r.date})
+        .filter(function(r){return validTrip806(r)})
         .sort(function(a,b){return String(b.date).localeCompare(String(a.date))})
         .slice(0,3);
     }catch(_e){
@@ -72279,7 +72305,7 @@ button[data-target="sync"] .v11671-send-text,
     try{
       if(!Array.isArray(allData))return [];
       return allData.slice()
-        .filter(function(r){return r&&r.date})
+        .filter(function(r){return validTrip806(r)})
         .sort(function(a,b){return String(b.date).localeCompare(String(a.date))})
         .slice(0,3);
     }catch(_e){return []}
@@ -81334,7 +81360,7 @@ window.renderActivityCalcDetailV11736=function(){};
     }catch(_e){arr=[]}
 
     var q=outboxTimeMap();
-    return arr.filter(function(r){return r&&r.date}).slice().sort(function(a,b){
+    return arr.filter(function(r){return validTrip806(r)}).slice().sort(function(a,b){
       var sa=Number(a._savedAt)||q.get(String(a.id||''))||0;
       var sb=Number(b._savedAt)||q.get(String(b.id||''))||0;
       if(sa!==sb)return sb-sa;
@@ -81564,6 +81590,7 @@ html:not(.app-phone803) #entry#entry .seg-row-actions-v11355>.seg-remove{
   }
   let photosObserver=null;
   window.renderPhoneDiaryV11803=function(rows){
+    rows=rows.filter(r=>validTrip806(r));
     if(!isPhoneV11803())return;
     const page=document.getElementById('search');
     let list=document.getElementById('phoneDiaryList803');
@@ -81958,27 +81985,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return {user,over,trash};
   }
   function validate(r){
-    if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.id!=='string'||!r.id.trim()||['__proto__','constructor','prototype'].includes(r.id))throw Error('IDが不正な記録があるため中止しました。');
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!Number.isFinite(Date.parse(r.date+'T00:00:00Z'))||new Date(r.date+'T00:00:00Z').toISOString().slice(0,10)!==r.date)throw Error('日付が不正な記録があります：'+r.id);
+    if(!validTrip806(r))throw Error('有効な釣行ID・日付を持たない記録のため中止しました。');
   }
   function localRecords(){
-    const {user,over,trash}=stores(),m=new Map();
-    // Shared stores also contain migration/settings buckets. Never turn a bucket
-    // key into a trip ID. Validate trip identity and date before adding candidates.
-    const isTrip=r=>{
-      if(!r||typeof r!=='object'||Array.isArray(r)||!own(r,'id')||!own(r,'date')||typeof r.date!=='string'||typeof r.id!=='string'||r.id.startsWith('__'))return false;
-      try{validate(r);return true;}catch(_){return false;}
-    };
-    // norm() reconstructs segments; use original JSON instead to retain unknown fields.
-    for(const r of [...excelData,...user]){
-      // Original Excel rows have no stored id; preserve their existing idOf()
-      // identity only when all three source coordinates are present and valid.
-      const legacy=r&&typeof r==='object'&&!Array.isArray(r)&&!r.id&&typeof r.source_sheet==='string'&&r.source_sheet.trim()&&Number.isInteger(r.source_row)&&r.source_row>0&&Number.isInteger(r.source_col)&&r.source_col>0;
-      const record=legacy?{...r,id:idOf(r)}:r;
-      if(isTrip(record))m.set(record.id,{...record});
-    }
-    for(const [id,r] of Object.entries(over)){if(id.startsWith('__')||!isTrip(r))continue;if(r.id!==id)throw Error('編集記録のID不一致：'+id);m.set(id,{...(m.get(id)||{}),...r});}
-    const records=[...m.values()].filter(r=>!own(trash,r.id));records.forEach(validate);return records;
+    const {user,over,trash}=stores();
+    return collectValidTrips806(excelData,user,over,trash);
   }
   // Assets live in separate stores. If an unexpected embedded image is found,
   // fail rather than silently remove an unknown record field or upload a photo.
