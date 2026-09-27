@@ -82088,5 +82088,43 @@ html.app-phone803 #supabaseSync806 input{min-width:0!important;font-size:16px!im
 })();
 
 </script>
+<style id="diary-delete806-style">
+#detail #dContent #diaryDelete806{display:block!important;width:100%!important;box-sizing:border-box;margin:18px 0 12px!important;min-height:48px;white-space:normal;}
+</style>
+<script id="diary-delete806-script">
+/* iPhone diary detail: use the same confirmed trash action as the recent list. */
+(() => {
+  'use strict';
+  const original=window.showDetailById;
+  window.showDetailById=function(id){
+    const result=original.apply(this,arguments);
+    if(!phoneV11806())return result;
+    document.getElementById('diaryDelete806')?.remove();
+    if(!allData.some(r=>r.id===id))return result;
+    const content=document.getElementById('dContent');if(!content)return result;
+    const button=document.createElement('button');button.type='button';button.id='diaryDelete806';button.className='danger';button.textContent='この釣行を削除';
+    button.addEventListener('click',()=>{
+      if(button.disabled)return;
+      const before=load(LS.trash,{});if(Object.prototype.hasOwnProperty.call(before,id))return;
+      button.disabled=true;let failure=null;
+      try{window.trashRecord(id);}catch(e){failure=e;}
+      const after=load(LS.trash,{});
+      if(!Object.prototype.hasOwnProperty.call(after,id)){
+        button.disabled=false;if(failure)alert('削除できませんでした。記録は変更されていません。');return;
+      }
+      // The legacy refresh may throw after saving trash. Complete navigation and
+      // list refresh independently, without performing a second delete or touching photos.
+      allData=activeData();closeDetail();
+      try{goPage('search');}catch(e){console.warn('削除後の一覧遷移',e);}
+      for(const fn of [renderSearch,window.renderRecentReferenceV11622,renderTrash]){
+        if(typeof fn==='function')try{fn();}catch(e){console.warn('削除後の表示更新',e);}
+      }
+    });
+    content.appendChild(button);
+    return result;
+  };
+})();
+
+</script>
 </body>
 </html>
