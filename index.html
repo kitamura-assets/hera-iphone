@@ -82187,7 +82187,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function controls(){if(!$('photo806Upload'))return;const {role,busy}=api.identity;
     $('photo806Upload').disabled=busy||!api.phone()||role!=='reader';$('photo806Download').disabled=busy||api.phone()||role!=='writer';$('photo806Check').disabled=busy||statsBusy;
     $('photo806PushState').disabled=busy||api.phone()||role!=='writer';$('photo806PullState').disabled=busy||!api.phone()||role!=='reader';
-    $('photo806PushState').hidden=api.phone();$('photo806PullState').hidden=!api.phone();
+    $('photo806InitialState').hidden=api.phone();$('photo806InitialState').disabled=busy||api.phone()||role!=='writer';$('photo806PushState').hidden=api.phone();$('photo806PullState').hidden=!api.phone();
     $('trip806Delta').disabled=busy||!role;$('photo806Stop').disabled=!batch;
     $('photo806Network').textContent=network()==='mobile'?'モバイル通信／節約モード：写真転送は停止します。':network()==='wifi'?'Wi-Fi接続を検出。写真の送受信はボタンを押した時だけです。':'通信種別を判定できません。自宅Wi-Fiへの接続を確認してから操作してください。';
   }
@@ -82282,56 +82282,81 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     await stateSet('down:'+api.identity.uid,receipts);api.redraw();
     message('写真取得が完了しました\n新規取得：'+downloaded+'枚／既存：'+kept+'枚\n釣行未取込：'+waiting+'枚／端末で削除・変更済み：'+deleted+'枚／10枚上限：'+limit+'枚\n釣行未取込分は、当日JSON等で釣行をPCへ取り込んでから再実行してください。');
   }
-  // PC-authoritative metadata. Called only by the two explicit buttons below.
+  // Version 2: the saved PC display, never its historical deletion/rotation log, is authoritative.
   async function stateManifest(){
-    let data;try{data=await api.request('/rest/v1/rpc/hera_photo_state_manifest806',{});}catch(e){if(e.status===404)throw Error('Supabaseで supabase-photo-pc-state806.sql を実行してから再試行してください。');throw e;}
-    if(data?.version!==1||!data.etags||typeof data.etags!=='object')throw Error('PC写真状態の追加SQLを先に実行してください。');
+    let data;try{data=await api.request('/rest/v1/rpc/hera_photo_state_manifest806',{});}catch(e){if(e.status===404)throw Error('Supabaseで supabase-photo-pc-exact806.sql を実行してください。');throw e;}
+    if(data?.version!==2||!data.etags||typeof data.etags!=='object'||!Array.isArray(data.heads)||!data.heads.every(id=>typeof id==='string'&&id&&!id.startsWith('__')))throw Error('Supabaseで supabase-photo-pc-exact806.sql を実行してから、PCの初回正本確定を行ってください。');
     const rows=validateManifest(data.rows),ids=new Set();
     for(const m of rows){if(ids.has(m.photo_id)||typeof m.active!=='boolean'||typeof m.pc_confirmed!=='boolean'||!/^[a-f0-9]{32}$/.test(data.etags[m.record_id]||''))throw Error('PC写真状態の応答が不正です。');ids.add(m.photo_id);}
     return data;
   }
   async function assertLocalPhotos(rid,list){
-    checkBatch();
-    const now=(await readPhotos()).filter(r=>r.recordId===rid).sort((a,b)=>a.order-b.order);
+    checkBatch();const now=(await readPhotos()).filter(r=>r.recordId===rid).sort((a,b)=>a.order-b.order);
     if(api.pendingEntry()||!api.localRecords().some(r=>r.id===rid)||api.stable(now)!==api.stable(list.map(p=>p.row)))throw Error('確認中に釣行・写真が変更されました。保存してから再実行してください。');
+  }
+  async function pixelIdentity(data){
+    const img=new Image();img.src=data;await img.decode();const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+    const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);const digest=await hash(ctx.getImageData(0,0,canvas.width,canvas.height).data);
+    return canvas.width+'x'+canvas.height+':'+digest;
+  }
+  async function canonicalPCPhoto(p,order){
+    // A proven canonical image keeps its ID through metadata rotations and reordering.
+    let proven=p.row.pc_display_v2===true&&!!p.row.originalData;
+    if(proven){const expected=await window.photoRotateData806(p.row.originalData,p.meta.rotation);proven=expected===p.row.data||await pixelIdentity(expected)===await pixelIdentity(p.row.data);}
+    if(proven)return {blob:p.blob,meta:{...p.meta,sort_order:order},row:p.row,migrated:false};
+    // Old pixels may already be rotated, with rotation=0 and even a stale originalData.
+    // Use exactly what the PC viewer displays. Immutable new paths keep the old files safe.
+    const blob=blobFromData(p.row.data),sha256=await hash(await blob.arrayBuffer());
+    const photo_id=await hash('pc-exact806-v2\0'+p.meta.record_id+'\0'+p.meta.photo_id+'\0'+sha256);
+    return {blob,meta:{...p.meta,photo_id,sha256,byte_size:blob.size,mime:blob.type,rotation:0,sort_order:order},row:{...p.row,photo_id,originalData:p.row.data,rotation:0,pc_display_v2:true},migrated:true};
   }
   async function pushPCState(){
     if(api.phone()||api.identity.role!=='writer')throw Error('PC書込用アカウントで実行してください。');
-    checkNetwork();const snapshot=await stateManifest(),local=await scan(),valid=new Set(api.localRecords().map(r=>r.id));
-    const ids=new Set([...local.map(p=>p.meta.record_id),...snapshot.rows.map(m=>m.record_id)]),plans=[];
-    let blocked=0,removed=0,rotated=0,reordered=0,newCount=0,bytes=0;
-    for(const rid of ids){
-      if(!valid.has(rid))continue;
-      const list=local.filter(p=>p.meta.record_id===rid),remote=snapshot.rows.filter(m=>m.record_id===rid),deleted=new Set(await window.photoDeletedIds806(rid));
-      // Missing files are not evidence of deletion. Require an explicit local deletion mark.
-      if(remote.some(m=>m.active&&!list.some(p=>p.meta.photo_id===m.photo_id)&&!deleted.has(m.photo_id))){blocked++;continue;}
+    checkNetwork();const snapshot=await stateManifest(),local=await scan(),records=api.localRecords(),heads=new Set(snapshot.heads),plans=[],empty=[];
+    let removed=0,migrated=0,rotated=0,reordered=0,newCount=0,bytes=0;
+    const review=[];
+    for(const record of records){
+      const rid=record.id,list=local.filter(p=>p.meta.record_id===rid),remote=snapshot.rows.filter(m=>m.record_id===rid);
+      if(!list.length&&!remote.length){if(!heads.has(rid))empty.push(rid);continue;}
       if(list.length>10)throw Error('1釣行の写真が10枚を超えています。');
-      const items=list.map((p,i)=>{
+      const prepared=[];for(let i=0;i<list.length;i++){checkBatch();prepared.push(await canonicalPCPhoto(list[i],i));}
+      const items=prepared.map(p=>{
         const old=snapshot.rows.find(m=>m.photo_id===p.meta.photo_id);
-        if(old&&(old.record_id!==rid||old.sha256!==p.meta.sha256||old.byte_size!==p.meta.byte_size||old.mime!==p.meta.mime))throw Error('同一photo_idの元画像が一致しません。反映を中止しました。');
-        if(!old){newCount++;bytes+=p.blob.size;}else{if(old.rotation!==p.meta.rotation)rotated++;if(old.sort_order!==i)reordered++;}
-        return {...p.meta,sort_order:i,storage_path:old?.storage_path||api.identity.uid+'/'+p.meta.photo_id};
+        if(old&&(old.record_id!==rid||old.sha256!==p.meta.sha256||old.byte_size!==p.meta.byte_size||old.mime!==p.meta.mime))throw Error('正規画像のIDと元画像が一致しません。反映を中止しました。');
+        if(!old){newCount++;bytes+=p.blob.size;}else{if(old.rotation!==p.meta.rotation)rotated++;if(old.sort_order!==p.meta.sort_order)reordered++;}
+        if(p.migrated)migrated++;
+        return {...p.meta,storage_path:old?.storage_path||api.identity.uid+'/'+p.meta.photo_id};
       });
-      removed+=remote.filter(m=>m.active&&!items.some(p=>p.photo_id===m.photo_id)).length;
-      const same=remote.every(m=>m.pc_confirmed&&m.active===items.some(p=>p.photo_id===m.photo_id))&&items.every(p=>remote.some(m=>m.photo_id===p.photo_id&&m.active&&m.pc_confirmed&&signature(m)===signature(p)));
-      if(!same)plans.push({rid,list,items,etag:snapshot.etags[rid]||'d751713988987e9331980363e24189ce'});
+      const cloudCount=remote.filter(m=>m.active).length,decrease=Math.max(0,cloudCount-list.length);removed+=decrease;
+      const same=heads.has(rid)&&remote.every(m=>m.pc_confirmed&&m.active===items.some(p=>p.photo_id===m.photo_id))&&items.every(p=>remote.some(m=>m.photo_id===p.photo_id&&m.active&&m.pc_confirmed&&signature(m)===signature(p)));
+      if(!same||prepared.some(p=>p.migrated)){
+        plans.push({rid,list,prepared,items,same,etag:snapshot.etags[rid]||'d751713988987e9331980363e24189ce'});
+        review.push(record.date+' '+(record.place||'')+'：クラウド'+cloudCount+'枚 → PC'+list.length+'枚。'+decrease+'枚を非表示にします');
+      }
     }
-    if(!plans.length){message('PC写真状態の変更：0件。\n未取得写真があるため保留：'+blocked+'釣行。保留分は「クラウドから写真を取得」後に再実行してください。');return;}
-    if(!confirm('自宅Wi-Fiへの接続を確認してください。\nPCの写真状態を正本として '+plans.length+'釣行に反映します。\n非表示：'+removed+'枚／回転変更：'+rotated+'枚／順序変更：'+reordered+'枚\n新規画像：'+newCount+'枚（最大約'+(bytes/1048576).toFixed(2)+'MB）\n未取得写真があるため保留：'+blocked+'釣行\nStorageの画像本体は削除しません。続けますか？'))return;
-    let committed=0,sent=0;
-    for(const plan of plans){
-      const {rid,list,items,etag}=plan;await assertLocalPhotos(rid,list);
+    if(!plans.length&&!empty.length){message('PCとクラウドの写真状態は一致しています。変更・画像再送はありません。');return;}
+    if(!confirm('現在PCに表示されている保存済み写真を絶対正本として確定します。\n過去の削除履歴や未取得の有無には依存しません。\n\n'+review.join('\n')+'\n\n写真0枚として初回確定：'+empty.length+'釣行\n現在の表示画像を正規画像へ移行：'+migrated+'枚\n送信予定：'+newCount+'枚（最大約'+(bytes/1048576).toFixed(2)+'MB）\n旧画像は保管し、日誌から除外します。自宅Wi-Fiに接続して続けますか？'))return;
+    let sent=0,committed=0;
+    for(const {rid,list,prepared,items,same,etag} of plans){
+      await assertLocalPhotos(rid,list);
       for(let i=0;i<items.length;i++){
         checkBatch();const m=items[i];if(snapshot.rows.some(r=>r.photo_id===m.photo_id))continue;
         let exists=false;try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'HEAD',signal:batch.signal});exists=true;}catch(e){if(![400,404].includes(e.status))throw e;}
-        if(!exists){message('PCの新規写真を送信中：'+(sent+1)+'枚目');try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'POST',headers:{'Content-Type':m.mime,'x-upsert':'false'},body:list[i].blob,signal:batch.signal,responseType:'json'});}catch(e){if(e.status!==409)throw e;}sent++;}
+        if(!exists){message('PCの表示画像を送信中：'+(sent+1)+'枚目');try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'POST',headers:{'Content-Type':m.mime,'x-upsert':'false'},body:prepared[i].blob,signal:batch.signal,responseType:'json'});}catch(e){if(e.status!==409)throw e;}sent++;}
       }
       await assertLocalPhotos(rid,list);
-      const result=await api.request('/rest/v1/rpc/hera_photo_pc_commit806',{trip_id:rid,items,expected_etag:etag});
-      if(result?.accepted!==items.length)throw Error('PC写真状態の確定件数が不正です。再実行して確認してください。');
-      committed++;message('PC写真状態を反映中：'+committed+'／'+plans.length+'釣行');
+      if(!same){const result=await api.request('/rest/v1/rpc/hera_photo_pc_exact_commit806',{trip_id:rid,items,expected_etag:etag});if(result?.accepted!==items.length)throw Error('PC写真状態の確定件数が不正です。再実行してください。');}
+      // Commit identity changes only after the cloud transaction succeeds. Retain the old rows.
+      await assertLocalPhotos(rid,list);
+      if(prepared.some(p=>p.migrated))await applyPhotoState(rid,list.map(p=>p.row),prepared.map(p=>p.row),list.filter((p,i)=>prepared[i].migrated).map(p=>({...p.row,photo_id:p.meta.photo_id})),[]);
+      committed++;message('PC正本を確定中：'+committed+'／'+plans.length+'釣行');
     }
-    message('PCの写真状態をクラウドへ反映しました\n確定：'+committed+'釣行／新規画像送信：'+sent+'枚\n非表示：'+removed+'枚／回転変更：'+rotated+'枚／順序変更：'+reordered+'枚\n保留：'+blocked+'釣行。iPhoneで「クラウドから写真状態を取得」を押してください。');
+    if(empty.length){
+      checkBatch();const now=new Set((await readPhotos()).map(p=>p.recordId)),valid=new Set(api.localRecords().map(r=>r.id));
+      if(api.pendingEntry()||empty.some(id=>now.has(id)||!valid.has(id)))throw Error('確認中に写真・釣行が変更されました。再実行してください。');
+      const result=await api.request('/rest/v1/rpc/hera_photo_pc_empty806',{record_ids:empty});if(result?.accepted!==empty.length)throw Error('写真0枚の確定件数が不正です。再実行してください。');
+    }
+    api.redraw();message('現在のPC写真状態を正本として確定しました\n写真構成の確定：'+committed+'釣行／写真0枚の初回確定：'+empty.length+'釣行\n表示枚数の減少：'+removed+'枚／正規画像への移行：'+migrated+'枚\n回転変更：'+rotated+'枚／順序変更：'+reordered+'枚／画像送信：'+sent+'枚\niPhoneで「クラウドから写真状態を取得」を押してください。');
   }
   const archiveKey=(rid,pid)=>'__cloud_hidden806:'+rid+':'+pid;
   async function applyPhotoState(rid,before,after,hidden,usedArchives){
@@ -82350,42 +82375,45 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(Error(conflict?'取得中に写真が変更されました。再実行してください。':'写真状態を保存できません。元の写真は保持しています。空き容量を確認してください。'));
     });}finally{db.close();}
   }
+
+
+
   async function pullPhoneState(){
     if(!api.phone()||api.identity.role!=='reader')throw Error('iPhone読取用アカウントで実行してください。');
     checkNetwork();const snapshot=await stateManifest(),raw=await readPhotos(),local=await scan(),valid=new Set(api.localRecords().map(r=>r.id)),plans=[];
-    let bytes=0,missing=0,waiting=0,pending=0;
-    for(const rid of new Set(snapshot.rows.map(m=>m.record_id))){
+    if(!snapshot.heads.length)throw Error('先にPCで「現在のPC写真状態を初回正本として確定」を実行してください。');
+    let bytes=0,missing=0,waiting=0,hide=0;
+    for(const rid of new Set([...snapshot.heads,...snapshot.rows.map(m=>m.record_id),...local.map(p=>p.meta.record_id)])){
       if(!valid.has(rid)){waiting++;continue;}
-      const remote=snapshot.rows.filter(m=>m.record_id===rid),list=local.filter(p=>p.meta.record_id===rid),unknown=list.filter(p=>!remote.some(m=>m.photo_id===p.meta.photo_id));
-      const active=remote.filter(m=>m.active).sort((a,b)=>a.sort_order-b.sort_order||a.photo_id.localeCompare(b.photo_id));
-      if(active.length+unknown.length>10)throw Error('未送信写真を含めると10枚を超える釣行があります。写真は変更していません。PCで写真構成を確認してください。');
-      const sources=active.map(m=>{
-        const p=list.find(p=>p.meta.photo_id===m.photo_id),archive=raw.find(r=>r.key===archiveKey(rid,m.photo_id)&&r.cloud_hidden806&&r.archivedPhoto806?.photo_id===m.photo_id);
-        if(p&&(p.meta.sha256!==m.sha256||p.meta.byte_size!==m.byte_size))throw Error('同一photo_idの元画像が一致しません。取得を中止しました。');
-        if(!p&&!archive){missing++;bytes+=m.byte_size;}return {m,p,archive};
-      });
-      pending+=unknown.length;plans.push({rid,remote,list,unknown,sources});
+      const remote=snapshot.rows.filter(m=>m.record_id===rid),list=local.filter(p=>p.meta.record_id===rid),active=remote.filter(m=>m.active).sort((a,b)=>a.sort_order-b.sort_order||a.photo_id.localeCompare(b.photo_id));
+      if(active.length>10)throw Error('クラウドの写真が10枚を超えています。PCで写真状態を確定し直してください。');
+      const sources=[];
+      for(const m of active){
+        const p=list.find(p=>p.meta.photo_id===m.photo_id&&p.meta.sha256===m.sha256&&p.meta.byte_size===m.byte_size);
+        let archive=!p?raw.find(r=>r.key===archiveKey(rid,m.photo_id)&&r.cloud_hidden806&&r.archivedPhoto806?.photo_id===m.photo_id):null;
+        if(archive){const blob=blobFromData(archive.archivedPhoto806.originalData||archive.archivedPhoto806.data);if(blob.size!==m.byte_size||await hash(await blob.arrayBuffer())!==m.sha256)archive=null;}
+        if(!p&&!archive){missing++;bytes+=m.byte_size;}sources.push({m,p,archive});
+      }
+      const hidden=list.filter(p=>!sources.some(s=>s.p===p)).map(p=>({...p.row,photo_id:p.meta.photo_id}));hide+=hidden.length;
+      if(list.length||active.length)plans.push({rid,list,sources,hidden});
     }
-    if(!confirm('自宅Wi-Fiへの接続を確認してください。\nクラウドの写真状態を '+plans.length+'釣行に反映します。削除指定の写真は日誌から非表示にし、端末内に保管します。\n未取得画像：'+missing+'枚（約'+(bytes/1048576).toFixed(2)+'MB）\nクラウドにない端末写真：'+pending+'枚は末尾に残します。続けますか？'))return;
-    let hiddenCount=0,downloaded=0,changed=0;const receiptKey='up:'+api.identity.uid,receipts=await stateGet(receiptKey);
-    for(const {rid,remote,list,unknown,sources} of plans){
+    if(!confirm('クラウドのactive=true一覧だけを日誌に表示します。\nクラウドにない端末写真も非表示にして保管します：'+hide+'枚\n画像取得：'+missing+'枚（約'+(bytes/1048576).toFixed(2)+'MB）\n自宅Wi-Fiへ接続して続けますか？'))return;
+    let changed=0,downloaded=0,hiddenCount=0;const receiptKey='up:'+api.identity.uid,receipts=await stateGet(receiptKey);
+    for(const {rid,list,sources,hidden} of plans){
       await assertLocalPhotos(rid,list);const after=[],usedArchives=[];
       for(const {m,p,archive} of sources){
-        checkBatch();let row=p?.row||archive?.archivedPhoto806,originalData=row?.originalData||row?.data;
+        checkBatch();const row=p?.row||archive?.archivedPhoto806;let originalData=row?.originalData||row?.data;
         if(!row){const blob=await api.rawRequest('/storage/v1/object/authenticated/'+BUCKET+'/'+m.storage_path,{method:'GET',signal:batch.signal,responseType:'blob'});if(blob.size!==m.byte_size||await hash(await blob.arrayBuffer())!==m.sha256)throw Error('取得写真のハッシュ・容量が一致しません。');originalData=await blobData(new Blob([blob],{type:m.mime}));downloaded++;}
-        if(archive){const blob=blobFromData(originalData);if(blob.size!==m.byte_size||await hash(await blob.arrayBuffer())!==m.sha256)throw Error('保管写真の元画像が一致しません。');usedArchives.push(archive.key);}
-        const data=row&&row.rotation===m.rotation?row.data:await window.photoRotateData806(originalData,m.rotation);
-        after.push({...row,photo_id:m.photo_id,originalData,rotation:m.rotation,data,name:m.name||''});
+        if(archive&&!hidden.some(r=>r.photo_id===m.photo_id))usedArchives.push(archive.key);
+        // Regenerate even when the angle is unchanged: an old display cache can be wrong.
+        const data=await window.photoRotateData806(originalData,m.rotation);
+        after.push({...row,photo_id:m.photo_id,originalData,rotation:m.rotation,data,pc_display_v2:m.pc_confirmed,name:m.name||''});
       }
-      after.push(...unknown.map(p=>p.row));
-      const hidden=list.filter(p=>remote.some(m=>m.photo_id===p.meta.photo_id&&!m.active)).map(p=>({...p.row,photo_id:p.meta.photo_id}));
-      await assertLocalPhotos(rid,list);
-      const ordered=after.map((r,i)=>({...r,key:rid+':'+i,recordId:rid,order:i}));
+      await assertLocalPhotos(rid,list);const ordered=after.map((r,i)=>({...r,key:rid+':'+i,recordId:rid,order:i}));
       if(hidden.length||api.stable(ordered)!==api.stable(list.map(p=>p.row))){await applyPhotoState(rid,list.map(p=>p.row),ordered,hidden,usedArchives);changed++;}
-      sources.forEach(({m},i)=>{receipts[m.photo_id]={uploaded:true,signature:signature({...m,sort_order:i})};});
-      await stateSet(receiptKey,receipts);hiddenCount+=hidden.length;
+      sources.forEach(({m},i)=>{receipts[m.photo_id]={uploaded:true,signature:signature({...m,sort_order:i})};});await stateSet(receiptKey,receipts);hiddenCount+=hidden.length;
     }
-    api.redraw();message('クラウドの写真状態を取得しました\n反映：'+changed+'釣行／新規画像取得：'+downloaded+'枚／非表示：'+hiddenCount+'枚\n未送信の端末写真：'+pending+'枚を保持／釣行未取込：'+waiting+'釣行\n削除指定の元画像は完全バックアップにも含まれます。');
+    api.redraw();message('PC正本の写真一覧・向き・順序を反映しました\n反映：'+changed+'釣行／画像取得：'+downloaded+'枚／端末の旧写真を非表示・保管：'+hiddenCount+'枚\n釣行未取込：'+waiting+'釣行。非表示の元画像は完全バックアップに残ります。');
   }
 
   async function tripDelta(){
@@ -82412,9 +82440,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }else throw Error('端末に対応するアカウントでログインしてください。');
     });
   }
-  const panel=document.createElement('section');panel.id='photoCloud806';panel.innerHTML='<h3>写真の手動クラウド同期</h3><p>帰宅後、自宅Wi-Fiにつないでから操作してください。写真はボタンを押すまで送受信しません。</p><p id="photo806Network"></p><p id="photo806Counts" role="status">写真未同期：未確認／同期済み：未確認。「写真状況を確認」で端末内だけを調べます。</p><div class="sb806Actions"><button type="button" class="secondary" id="photo806Check">写真状況を確認（通信なし）</button><button type="button" class="primary" id="photo806Upload">写真をクラウドへ同期</button><button type="button" class="primary" id="photo806Download">クラウドから写真を取得</button><button type="button" class="primary" id="photo806PushState">PCの写真状態をクラウドへ反映</button><button type="button" class="primary" id="photo806PullState">クラウドから写真状態を取得</button><button type="button" class="secondary" id="photo806Stop" disabled>写真通信を停止</button></div><p id="photo806Status" role="status" aria-live="polite"></p><h3>釣行の変更分同期</h3><p>追加SQLの設定後に使えます。初回は全件確認し、次回から変更分だけ送受信します。上の従来の全件同期も残しています。</p><button type="button" class="secondary" id="trip806Delta">釣行の変更分を同期</button>';
+  const panel=document.createElement('section');panel.id='photoCloud806';panel.innerHTML='<h3>写真の手動クラウド同期</h3><p>帰宅後、自宅Wi-Fiにつないでから操作してください。写真はボタンを押すまで送受信しません。</p><p id="photo806Network"></p><p id="photo806Counts" role="status">写真未同期：未確認／同期済み：未確認。「写真状況を確認」で端末内だけを調べます。</p><div class="sb806Actions"><button type="button" class="secondary" id="photo806Check">写真状況を確認（通信なし）</button><button type="button" class="primary" id="photo806Upload">写真をクラウドへ同期</button><button type="button" class="primary" id="photo806Download">クラウドから写真を取得</button><button type="button" class="secondary" id="photo806InitialState">現在のPC写真状態を初回正本として確定</button><button type="button" class="primary" id="photo806PushState">PCの写真状態をクラウドへ反映</button><button type="button" class="primary" id="photo806PullState">クラウドから写真状態を取得</button><button type="button" class="secondary" id="photo806Stop" disabled>写真通信を停止</button></div><p id="photo806Status" role="status" aria-live="polite"></p><h3>釣行の変更分同期</h3><p>追加SQLの設定後に使えます。初回は全件確認し、次回から変更分だけ送受信します。上の従来の全件同期も残しています。</p><button type="button" class="secondary" id="trip806Delta">釣行の変更分を同期</button>';
   $('supabaseSync806').appendChild(panel);
-  $('photo806Check').onclick=stats;$('photo806Upload').onclick=()=>transfer(upload);$('photo806Download').onclick=()=>transfer(download);$('photo806PushState').onclick=()=>transfer(pushPCState);$('photo806PullState').onclick=()=>transfer(pullPhoneState);$('photo806Stop').onclick=()=>batch?.abort();$('trip806Delta').onclick=tripDelta;
+  $('photo806Check').onclick=stats;$('photo806Upload').onclick=()=>transfer(upload);$('photo806Download').onclick=()=>transfer(download);$('photo806InitialState').onclick=()=>transfer(pushPCState);$('photo806PushState').onclick=()=>transfer(pushPCState);$('photo806PullState').onclick=()=>transfer(pullPhoneState);$('photo806Stop').onclick=()=>batch?.abort();$('trip806Delta').onclick=tripDelta;
   document.addEventListener('visibilitychange',()=>{if(document.hidden)batch?.abort();});window.addEventListener('pagehide',()=>batch?.abort());
   const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;connection?.addEventListener('change',()=>{if(network()==='mobile')batch?.abort();controls();});
   window.addEventListener('hera-auth806',controls);
