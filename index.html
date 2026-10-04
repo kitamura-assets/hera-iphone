@@ -1,5 +1,8 @@
 <!doctype html>
 <html lang="ja" class="search-booting-v1146"><head>
+<script id="place-sync-recovery807">/* Recover only a interrupted place-master commit, before the normal caches load. */
+(()=>{const key='hera_place_sync_journal807',pointer='hera_place_assets_generation_802';try{const raw=localStorage.getItem(key);if(!raw)return;const j=JSON.parse(raw);if(j.version!==1||!j.generation||!j.before)throw Error('地図同期の復旧情報を確認できません。');if(localStorage.getItem(pointer)!==j.generation){for(const k of ['hera_v06_map_pins','hera_v07_place_locations']){const v=j.before[k];if(v===null)localStorage.removeItem(k);else if(typeof v==='string')localStorage.setItem(k,v);else throw Error('地図同期の復旧情報が不正です。');}}localStorage.removeItem(key);}catch(e){window.heraPlaceRecoveryError807=e.message;}})();
+</script>
 <script id="power-ui807">/* Lifecycle for display-only work. Saving, clocks, auth and sync are not intercepted. */
 window.heraPower807=(()=>{
  const observers=new Set(),jobs=new Set(),resume=new Set(),waiters=new Map();
@@ -33489,8 +33492,6 @@ document.addEventListener('click',e=>{
     const pin=recordPin807(record)||resolvePin(place,spot);
     const loc=detailCoordinates807(record,place);
     delete box.dataset.mapSource807;
-    box.__lookup807={recordId:record?.id||null,recordDate:record?.date||null,place,spot,normalizedPlace:mapKey807(place),imageSource:recordImage807(record)?'record':getMapSrc(place)?'place cache':null,pin:pin?{x:pin.x,y:pin.y,name:pin.name||spot}:null,coordinates:loc||null,assetPointer:localStorage.getItem('hera_place_assets_generation_802')};
-    window.heraMapDiagnostic807?.attach(record,box);
     box.onclick=null;
     box.onkeydown=null;
     box.removeAttribute('title');
@@ -82789,64 +82790,56 @@ html.pc-photo-editor806 #photoPreview img{cursor:zoom-in}
  #detail .detail-header-sticky-v11466>#detailEditTop,#detail .detail-header-sticky-v11466>.close{height:44px!important;min-height:44px!important;padding:0 9px!important;font-size:14px!important;align-self:center!important}
  #detail .detail-header-sticky-v11466>.detail-nav-193{grid-row:3!important;margin:0!important}
 }
-#mapDiagnostic807{width:min(760px,calc(100vw - 24px));max-height:85vh;box-sizing:border-box;padding:18px;background:#fffcf5;border:1px solid #c6a783;border-radius:14px;color:#34251a}
-#mapDiagnostic807::backdrop{background:#0009}
-#mapDiagnostic807 header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-#mapDiagnostic807 pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:58vh;overflow:auto;background:#f6f0e6;padding:12px}
-#mapDiagnostic807 button,.map-diagnostic-trigger807{padding:9px 12px;border:1px solid #b79a78;border-radius:8px;background:#fff7ea;color:#5e3b24;cursor:pointer}
-.map-diagnostic-trigger807{margin-top:10px;font-size:12px}
+
 </style>
-<script id="temporary-map-diagnostic807">/* Temporary, read-only diagnostic. Remove this script and its trigger to uninstall. */
-(()=>{
- const target={date:'2026-09-25',place:'府中へら鮒センター',point:'奥の島',seat:'90番'};
- const normalize=v=>normPlace(String(v||'').normalize('NFKC').trim()).replace(/\s/g,'');
- const matches=r=>r&&r.date===target.date&&normalize(r.place)===normalize(target.place);
- const imageInfo=v=>{if(typeof v==='string')return {present:!!v,length:v.length,kind:v.startsWith('data:image/')?v.slice(0,v.indexOf(';')>0?v.indexOf(';'):40):v.startsWith('blob:')?'blob URL':/^https?:/.test(v)?'http(s) URL':'other'};if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,/src|image|url|data/i.test(k)?imageInfo(x):safe(x)]));return {present:false};};
- function safe(v,depth=0){if(depth>5)return '[深い項目省略]';if(typeof v==='string'){if(v.startsWith('data:image/')||v.startsWith('blob:'))return imageInfo(v);return v.length>500?v.slice(0,500)+'…':v;}if(Array.isArray(v))return v.slice(0,100).map(x=>safe(x,depth+1));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).slice(0,100).map(([k,x])=>[k,safe(x,depth+1)]));return v;}
- function related(r){if(!r)return null;return {allKeys:Object.keys(r),values:Object.fromEntries(Object.entries(r).filter(([k])=>/^(id|date|place|point|spot|seat|seatNo|seatNumber)$|map|pin|latitude|longitude|location|coord/i.test(k)).map(([k,v])=>[k,safe(v)]))};}
- function parse(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch(e){return {diagnosticParseError:e.message};}}
- function placeMatch(store){return Object.entries(store||{}).filter(([k])=>normalize(k)===normalize(target.place));}
- function mapsSummary(store){return {keys:Object.keys(store||{}),matches:placeMatch(store).map(([key,value])=>({key,image:imageInfo(value)}))};}
- async function inspectAssets(){
-  const result={database:'heraDiaryPlaceAssets802',objectStore:'assets',mode:'readonly',pointerKey:'hera_place_assets_generation_802',generation:localStorage.getItem('hera_place_assets_generation_802'),availableDatabases:null};
-  if(indexedDB.databases){try{result.availableDatabases=(await indexedDB.databases()).map(d=>({name:d.name,version:d.version}));if(!result.availableDatabases.some(d=>d.name===result.database)){result.exists=false;return result;}}catch(e){result.catalogError=e.message;}}
-  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open(result.database);q.onupgradeneeded=()=>{q.transaction.abort();};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('DBが存在しない、または読み取り不可（新規作成は中止）'));q.onblocked=()=>reject(Error('DBが他の処理で使用中です'));});
-  try{result.exists=true;result.objectStores=[...db.objectStoreNames];if(!db.objectStoreNames.contains('assets'))return result;
-   const keys=await new Promise((resolve,reject)=>{const q=db.transaction('assets','readonly').objectStore('assets').getAllKeys();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});result.storedKeys=keys;
-   const current=result.generation?result.generation+':maps':null;result.requestedKey=current;result.currentKeyExists=!!current&&keys.includes(current);
-   // Current plus at most two older map generations; never read photo stores or decode images.
-   const mapKeys=keys.filter(k=>typeof k==='string'&&k.endsWith(':maps'));const selected=[...new Set([current,...mapKeys.slice(-2)].filter(k=>k&&keys.includes(k)))];result.mapGenerations=[];
-   for(const key of selected){const summary=await new Promise((resolve,reject)=>{const q=db.transaction('assets','readonly').objectStore('assets').get(key);q.onsuccess=()=>resolve(mapsSummary(q.result));q.onerror=()=>reject(q.error);});result.mapGenerations.push({key,current:key===current,...summary});}
-   result.otherGenerationsNotRead=mapKeys.filter(k=>!selected.includes(k));return result;
-  }finally{db.close();}
- }
- async function run(){
-  const result={diagnostic:'807-map-readonly-v1',generatedAt:new Date().toISOString(),target,origin:location.origin,userAgent:navigator.userAgent,readOnly:true,imageBodiesIncluded:false};
-  try{await window.heraPlaceAssets802?.ready;result.assetCacheReady=true;}catch(e){result.assetCacheReady=false;result.assetCacheError=e.message;}
-  const users=parse(LS.user,[]),over=parse(LS.over,{}),byId=new Map(allData.map(r=>[String(r.id),r]));
-  const select=rows=>(Array.isArray(rows)?rows:[]).filter(matches).map(related);
-  result.records={localStorageUser:{key:LS.user,matches:select(users)},localStorageOverrides:{key:LS.over,matches:Object.entries(over||{}).filter(([id,r])=>matches(r)||matches(byId.get(id))).map(([key,r])=>({key,...related(r)}))},embedded:select(excelData),effective:select(allData)};
-  result.master={localStorageMaps:{key:LS.maps,...mapsSummary(parse(LS.maps,{}))},resolvedMapCache:{api:'load(LS.maps) → heraPlaceAssets802.read on iPhone',...mapsSummary(load(LS.maps,{}))},pins:{key:LS.pins,matches:placeMatch(parse(LS.pins,{})).map(([key,v])=>({key,values:safe(v)})),resolved:safe(placePins(target.place))},coordinates:{key:LS.locations,matches:placeMatch(parse(LS.locations,{})).map(([key,v])=>({key,values:safe(v)}))},otherCandidateKeys:Object.keys(localStorage).filter(k=>/place|map|pin|location/i.test(k)&&![LS.maps,LS.pins,LS.locations,LS.placePhotos].includes(k))};
-  try{result.indexedDB=await inspectAssets();}catch(e){result.indexedDB={error:e.message};}
-  const box=document.getElementById('detailMap');result.actualDetailLookup=box?.__lookup807?{...safe(box.__lookup807),renderedSource:box.dataset.mapSource807||null,isTargetDate:box.__lookup807.recordDate===target.date}:null;
-  result.search={placeRaw:target.place,normalized:normalize(target.place),pointCandidates:[target.point,target.point+' '+target.seat],mapLookup:'record mapImage/mapSrc/mapSnapshot/map → load(hera_v02_maps) by normalized place',pinLookup:'record mapPin/pin → placePins(place) by normalized spot/alias',coordinateLookup:'record location/coordinates/lat/lon → hera_v07_place_locations by normalized place',indexedDBLookup:result.indexedDB.requestedKey||null};
-  const hasImage=v=>typeof v==='string'?/^(data:image\/|blob:|https?:)/.test(v):!!(v&&typeof v==='object'&&(v.present&&v.length||Object.entries(v).some(([k,x])=>/^(src|dataUrl|image|mapImage)$/.test(k)&&hasImage(x))));
-  const effective=result.records.effective;const recordImage=effective.some(r=>Object.entries(r.values).some(([k,v])=>/^(mapImage|mapSrc|mapSnapshot|map)$/.test(k)&&hasImage(v)));const mapped=result.master.resolvedMapCache.matches.some(m=>hasImage(m.image));
-  const pinCount=result.master.pins.resolved?.length||0,hasCoords=result.master.coordinates.matches.length>0;
-  result.findings=[];if(!effective.length)result.findings.push('対象日・釣り場の有効釣行がこの端末の表示用データにありません。同期元・日付・釣り場表記を確認してください。');
-  if(mapped||recordImage)result.findings.push('画像候補があります。actualDetailLookupとキー・画像形式・読み取り状態を照合してください。');
-  else result.findings.push('この端末の現在の画像参照先には対象釣り場のマップ画像が見つかりません。');
-  if(result.indexedDB.mapGenerations?.some(g=>!g.current&&g.matches.length))result.findings.push('現在参照していないDB世代に対象画像があります。世代切替・復元履歴の確認が必要です。診断では参照先を変更しません。');
-  result.findings.push('釣り場ピン候補 '+pinCount+'件／釣り場座標候補 '+(hasCoords?'あり':'なし')+'。値の妥当性と対象釣座の一致は上記内容で確認してください。');
-  result.transferRoute={recordSync:'既存Supabase釣行同期は釣行recordのpayloadのみ。独立した釣り場マップ・ピン・位置マスターは同期しません。',photoSync:'Supabase写真同期は釣行写真用。釣り場マップのStorage転送は実装されていません。',backup:'通常完全バックアップJSONには maps/pins/locations が含まれます。復元時、iPhoneのmapsはheraDiaryPlaceAssets802/assetsへ保存されます。',next:'同じ診断をPCでも実行し、PC側に画像があるか比較してください。今回の診断自体はコピー・取込・復元を行いません。完全復元は他のデータも対象となるため、地図だけのために実行しないでください。'};
-  result.power=window.heraPower807?.inspect();return result;
- }
- let dialog,output='',busy=false;
- async function open(){if(busy)return;if(!dialog){dialog=document.createElement('dialog');dialog.id='mapDiagnostic807';dialog.innerHTML='<header><strong>9/25 府中・奥の島90番 地図診断</strong><button type="button" data-copy>診断結果をコピー</button><button type="button" data-close>閉じる</button></header><p>読み取り専用です。画像本体・認証情報は結果に含めません。</p><pre tabindex="0"></pre><p role="status"></p>';dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.querySelector('[data-copy]').onclick=async()=>{if(!output)return;try{await navigator.clipboard.writeText(output);dialog.querySelector('[role=status]').textContent='診断結果をコピーしました。';}catch(e){const range=document.createRange();range.selectNodeContents(dialog.querySelector('pre'));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);dialog.querySelector('[role=status]').textContent='自動コピーできませんでした。選択された結果を長押ししてコピーしてください。';}};document.body.append(dialog);}if(!dialog.open)dialog.showModal();busy=true;dialog.querySelector('pre').textContent='保存先を読み取っています…';dialog.querySelector('[data-copy]').disabled=true;try{output=JSON.stringify(await run(),null,2);dialog.querySelector('pre').textContent=output;}catch(e){output=JSON.stringify({error:e.message},null,2);dialog.querySelector('pre').textContent=output;}finally{busy=false;dialog.querySelector('[data-copy]').disabled=false;}}
- const button=()=>{const b=document.createElement('button');b.type='button';b.className='map-diagnostic-trigger807';b.textContent='9/25 府中・奥の島90番の地図を診断';b.onclick=open;return b;};
- document.getElementById('settings').append(button());
- window.heraMapDiagnostic807={run,open,attach(record,box){if(matches(record)&&!box.parentElement.querySelector('.map-diagnostic-trigger807'))box.after(button());}};
+
+<style id="place-sync807-style">#placeSync807{padding:18px;margin-top:18px;overflow-wrap:anywhere}
+#placeSync807 h2{font-size:20px;color:#563722}
+#placeSync807 p{white-space:pre-line;line-height:1.6}
+.place-sync-actions807{display:flex;flex-wrap:wrap;gap:10px}
+.place-sync-actions807 button{white-space:normal;min-height:44px;max-width:100%;padding:10px 14px;border:1px solid #b69570;border-radius:10px;background:#fff4df;color:#593b29}
+@media(max-width:620px){.place-sync-actions807{flex-direction:column}.place-sync-actions807 button{width:100%}}
+</style>
+<script id="place-sync807">/* Manual PC-authoritative place assets. No trip/photo/rod storage is written here. */
+(()=>{'use strict';
+ const BUCKET='hera-place-maps807',JOURNAL='hera_place_sync_journal807',MAX_IMAGE=10*1024*1024,MAX_TOTAL=64*1024*1024;
+ const types=new Set(['image/png','image/jpeg','image/webp','image/gif','image/avif']);
+ const api=()=>window.heraSupabase806,phone=()=>api().phone();let busy=false;
+ const stable=v=>api().stable(v),clone=v=>JSON.parse(JSON.stringify(v));
+ function dictionary(v,label){if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).length>2000)throw Error(label+'の形式を確認できません。');for(const k of Object.keys(v))if(!k.trim()||k.length>200||['__proto__','constructor','prototype'].includes(k))throw Error(label+'のキーが不正です。');return v;}
+ function local(key){const raw=localStorage.getItem(key);return dictionary(raw?JSON.parse(raw):{},key);}
+ async function snapshot(){if(window.heraPlaceRecoveryError807)throw Error(window.heraPlaceRecoveryError807);await window.heraPlaceAssets802?.ready;await window.heraPlaceAssets802?.flush();return{maps:clone(dictionary(load(LS.maps,{}),'マップ')),pins:clone(local(LS.pins)),locations:clone(local(LS.locations))};}
+ function source(value){if(typeof value==='string')return{field:null,src:value};if(value&&typeof value==='object'&&!Array.isArray(value)){for(const field of ['src','dataUrl','image','mapImage'])if(typeof value[field]==='string')return{field,src:value[field]};}throw Error('未対応のマップ画像形式です。既存データは変更していません。');}
+ function blobFrom(src){const m=/^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i.exec(src);if(!m||!types.has(m[1].toLowerCase()))throw Error('地図画像は端末保存済みのPNG/JPEG/WebP/GIF/AVIFが必要です。外部URL等は自動取得しません。');const raw=atob(m[2]);if(!raw.length||raw.length>MAX_IMAGE)throw Error('地図画像は1枚10MB以下にしてください。');const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type:m[1].toLowerCase()});}
+ const hash=async blob=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),n=>n.toString(16).padStart(2,'0')).join('');
+ const dataURL=blob=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob);});
+ function metadata(v){dictionary(v.pins,'ピン');dictionary(v.locations,'位置情報');if(JSON.stringify(v).includes('data:image/'))throw Error('マスター情報に画像本体が混在しています。');if(JSON.stringify(v).length>2*1024*1024)throw Error('地図マスター情報が大きすぎます。');return v;}
+ async function manifest(s){const maps=Object.create(null);let bytes=0;for(const[place,value]of Object.entries(s.maps)){if(!value)continue;try{const {field,src}=source(value),blob=blobFrom(src),sha256=await hash(blob);bytes+=blob.size;if(bytes>MAX_TOTAL)throw Error('画像合計64MBを超えています。');const envelope=field?{...value,[field]:null}:null;maps[place]={path:'maps/'+sha256,sha256,mime:blob.type,size:blob.size,field,envelope};}catch(e){throw Error(place+'：'+e.message);}}return metadata({version:1,maps,pins:s.pins,locations:s.locations});}
+ function validate(p){if(!p||p.version!==1)throw Error('地図マスターの版が不正です。');dictionary(p.maps,'地図一覧');metadata(p);let total=0;for(const m of Object.values(p.maps)){if(!m||!/^maps\/[a-f0-9]{64}$/.test(m.path)||m.sha256!==m.path.slice(5)||!types.has(m.mime)||!Number.isSafeInteger(m.size)||m.size<=0||m.size>MAX_IMAGE)throw Error('地図画像の参照情報が不正です。');if(m.field!==null&&(!['src','dataUrl','image','mapImage'].includes(m.field)||!m.envelope||Array.isArray(m.envelope)||m.envelope[m.field]!==null))throw Error('地図画像形式が不正です。');total+=m.size;}if(total>MAX_TOTAL)throw Error('画像合計64MBを超えています。');return p;}
+ const counts=s=>({maps:Object.keys(s.maps).length,pins:Object.values(s.pins).reduce((n,v)=>n+(Array.isArray(v)?v.length:0),0),locations:Object.keys(s.locations).length});
+ const summary=s=>{const n=counts(s);return 'マップ '+n.maps+'釣り場／ピン '+n.pins+'件／位置 '+n.locations+'釣り場';};
+ function network(){const c=navigator.connection||navigator.webkitConnection;if(c?.type==='cellular'||c?.saveData)throw Error('モバイル通信またはデータ節約設定を検出しました。Wi-Fi接続後に実行してください。');}
+ const section=document.createElement('section');section.id='placeSync807';section.className='card';section.innerHTML='<h2>釣り場マップのクラウド同期</h2><p>PCのマップ・釣座ピン・位置情報だけを共有します。釣行・釣行写真・竿情報は変更しません。Wi-Fi接続時に手動で実行してください。</p><div class="place-sync-actions807"><button type="button" id="placeCheck807">端末の地図件数を確認</button><button type="button" id="placePush807">PCの釣り場マップをクラウドへ反映</button><button type="button" id="placePull807">クラウドから釣り場マップを取得</button></div><p id="placeStatus807" role="status">自動送受信は行いません。</p>';document.getElementById('settings').append(section);
+ const status=t=>document.getElementById('placeStatus807').textContent=t;
+ function controls(){document.getElementById('placePush807').hidden=phone()||api().identity.role==='reader';document.getElementById('placePull807').hidden=!phone();section.querySelectorAll('button').forEach(b=>b.disabled=busy);}
+ async function remote(){const r=await api().request('/rest/v1/rpc/hera_place_master_read807',{});if(!r||!Number.isSafeInteger(r.revision)||r.revision<0)throw Error('クラウド地図マスターを確認できません。');if(r.payload)validate(r.payload);return r;}
+ // Stage image generation first. A small journal makes pins/locations + generation switch recoverable.
+ async function commit(before,next){const assets=window.heraPlaceAssets802;if(!assets)throw Error('iPhoneの地図保存機能を確認できません。');if(stable(await snapshot())!==stable(before))throw Error('同期中に地図が変更されたため中止しました。');const home=assets.read(LS.placePhotos),generation=await assets.stage(next.maps,home);if(stable(await snapshot())!==stable(before)||stable(assets.read(LS.placePhotos))!==stable(home))throw Error('保存準備中に地図・ホーム写真が変更されたため中止しました。');if(api().pendingEntry()||api().identity.busy)throw Error('他の入力・同期が開始されたため保存を中止しました。');const rawBefore={[LS.pins]:localStorage.getItem(LS.pins),[LS.locations]:localStorage.getItem(LS.locations)};localStorage.setItem(JOURNAL,JSON.stringify({version:1,generation,before:rawBefore}));try{localStorage.setItem(LS.pins,JSON.stringify(next.pins));localStorage.setItem(LS.locations,JSON.stringify(next.locations));assets.activate(generation,next.maps,home);}catch(e){for(const[k,v]of Object.entries(rawBefore))if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);localStorage.removeItem(JOURNAL);throw e;}localStorage.removeItem(JOURNAL);}
+ async function synchronize(push){if(busy)return;busy=true;controls();try{if(push&&phone()||!push&&!phone())throw Error(push?'PCから実行してください。':'取得はiPhoneで実行してください。');network();await api().access();if(api().identity.role!==(push?'writer':'reader'))throw Error(push?'PC writerでログインしてください。':'iPhone readerでログインしてください。');if(api().identity.busy||api().pendingEntry())throw Error('釣行入力・他の同期を終えてから実行してください。');const before=await snapshot(),cloud=await remote();
+ if(push){status('PCの地図を確認しています…');const doc=await manifest(before);if(!Object.keys(doc.maps).length&&!Object.keys(doc.pins).length&&!Object.keys(doc.locations).length)throw Error('PCの地図マスターが空のため反映を中止しました。');const size=Object.values(doc.maps).reduce((n,m)=>n+m.size,0);if(!confirm('PC正本をクラウドへ反映します。\n'+summary(doc)+'\n画像合計 約'+(size/1048576).toFixed(1)+'MB（未送信画像のみ送信）。\nWi-Fi接続を確認してください。釣行・写真・竿情報は変更しません。')){status('反映をキャンセルしました。');return;}if(stable(cloud.payload)===stable(doc)){status('PCとクラウドの地図情報は一致しています。画像再送なし。\n'+summary(doc));return;}let sent=0;const seen=new Set();for(const[place,m]of Object.entries(doc.maps)){if(seen.has(m.path))continue;seen.add(m.path);let exists=false;try{await api().rawRequest('/storage/v1/object/'+BUCKET+'/'+m.path,{method:'HEAD'});exists=true;}catch(e){if(![400,404].includes(e.status))throw e;}if(!exists){status('地図送信中：'+place);const blob=blobFrom(source(before.maps[place]).src);try{await api().rawRequest('/storage/v1/object/'+BUCKET+'/'+m.path,{method:'POST',headers:{'Content-Type':m.mime,'x-upsert':'false'},body:blob});}catch(e){if(e.status!==409)throw e;}sent++;}}if(stable(await snapshot())!==stable(before))throw Error('送信中にPCマスターが変わりました。再実行してください。');const done=await api().request('/rest/v1/rpc/hera_place_master_write807',{document:doc,expected_revision:cloud.revision});if(!Number.isSafeInteger(done?.revision))throw Error('クラウドの確定結果を確認できません。再実行してください。');status('地図情報をクラウドへ反映しました。\n'+summary(doc)+'／新規画像送信 '+sent+'枚\niPhoneで「クラウドから釣り場マップを取得」を押してください。');
+ }else{if(!cloud.payload){status('クラウドに地図情報がありません。先にPCから反映してください。');return;}const doc=validate(cloud.payload),next=clone(before),pending=[];for(const[place,m]of Object.entries(doc.maps)){let same=false;try{same=await hash(blobFrom(source(before.maps[place]).src))===m.sha256;}catch(_){}if(same){const src=source(before.maps[place]).src;next.maps[place]=m.field?{...m.envelope,[m.field]:src}:src;}else pending.push([place,m]);}const bytes=pending.reduce((n,[,m])=>n+m.size,0);if(!confirm('PC正本の地図情報を取得します。\n'+summary(doc)+'\n画像取得 '+pending.length+'枚／約'+(bytes/1048576).toFixed(1)+'MB\nWi-Fi接続を確認してください。PCにある同名の地図・ピン・位置情報を更新し、端末だけの釣り場は保持します。\n釣行・写真・竿情報は変更しません。')){status('取得をキャンセルしました。');return;}for(const[place,m]of pending){status('地図取得中：'+place);const blob=await api().rawRequest('/storage/v1/object/authenticated/'+BUCKET+'/'+m.path,{responseType:'blob'});if(blob.size!==m.size||await hash(blob)!==m.sha256)throw Error('画像の検証に失敗しました：'+place);const src=await dataURL(new Blob([blob],{type:m.mime}));next.maps[place]=m.field?{...m.envelope,[m.field]:src}:src;}Object.assign(next.pins,doc.pins);Object.assign(next.locations,doc.locations);if(stable(next)!==stable(before))await commit(before,next);status('釣り場マップを取得しました。\n'+summary(doc)+'／画像取得 '+pending.length+'枚\n端末だけの釣り場・釣行・写真・竿情報は保持しました。');const id=window.__detailCurrentId;if(id&&document.getElementById('detail')?.classList.contains('show'))showDetailById(id);}
+ }catch(e){status('地図同期を完了できませんでした：'+e.message+'\n再実行できます。');throw e;}finally{busy=false;controls();}}
+ document.getElementById('placeCheck807').onclick=async()=>{if(busy)return;busy=true;controls();try{const s=await snapshot();status(summary(s)+'\nマップ：'+Object.keys(s.maps).join('、'));}catch(e){status(e.message);}finally{busy=false;controls();}};
+ document.getElementById('placePush807').onclick=()=>synchronize(true).catch(()=>{});document.getElementById('placePull807').onclick=()=>synchronize(false).catch(()=>{});window.addEventListener('hera-auth806',controls);controls();
+ window.heraPlaceSync807={snapshot,manifest,validate,synchronize};
 })();
 </script>
+<style id="detail-gap807">@media(max-width:620px){
+ /* The obsolete, visually hidden top delete button occupied an implicit fourth grid row.
+    The existing bottom "この釣行を削除" action remains available. */
+ #detail .detail-header-sticky-v11466>#detailDeleteTopV11357{display:none!important}
+ #detail .detail-header-sticky-v11466{padding-bottom:18px!important}
+}
+</style>
 </body>
 </html>
