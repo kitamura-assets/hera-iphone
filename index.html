@@ -1,5 +1,27 @@
 <!doctype html>
 <html lang="ja" class="search-booting-v1146"><head>
+<script id="power-ui807">/* Lifecycle for display-only work. Saving, clocks, auth and sync are not intercepted. */
+window.heraPower807=(()=>{
+ const observers=new Set(),jobs=new Set(),resume=new Set(),waiters=new Map();
+ class UIObserver{
+  constructor(callback){this.callback=callback;this.targets=new Map();this.native=new MutationObserver(records=>{if(!document.hidden)callback(records,this);});observers.add(this);}
+  observe(target,options){observers.add(this);this.targets.set(target,options);if(!document.hidden)this.native.observe(target,options);}
+  disconnect(){this.native.disconnect();this.targets.clear();observers.delete(this);}
+  takeRecords(){return this.native.takeRecords();}
+  pause(){this.native.disconnect();}
+  restore(){for(const[t,o]of this.targets)if(t.isConnected)this.native.observe(t,o);if(this.targets.size)this.callback([],this);}
+ }
+ function every(fn,ms,enabled=()=>true){const job={timer:null,reconcile(){const wanted=!document.hidden&&enabled();if(wanted&&this.timer===null)this.timer=setInterval(()=>{if(!document.hidden&&enabled())fn();else this.reconcile();},ms);else if(!wanted&&this.timer!==null){clearInterval(this.timer);this.timer=null;}},stop(){if(this.timer!==null)clearInterval(this.timer);this.timer=null;jobs.delete(this);}};jobs.add(job);job.reconcile();return job;}
+ function reconcile(){for(const job of jobs)job.reconcile();}
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const o of observers)o.pause();reconcile();}else{for(const o of observers)o.restore();for(const fn of resume)fn();reconcile();}});
+ window.addEventListener('pagehide',()=>{for(const o of observers)o.pause();for(const j of jobs){if(j.timer!==null)clearInterval(j.timer);j.timer=null;}});
+ window.addEventListener('pageshow',()=>{if(!document.hidden){for(const o of observers)o.restore();reconcile();}});
+ document.addEventListener('click',()=>{queueMicrotask(reconcile);},true);
+ document.addEventListener('change',reconcile,true);
+ function whenElement(id,fn){if(document.getElementById(id)){fn();return;}let w=waiters.get(id);if(w){w.callbacks.add(fn);return;}w={callbacks:new Set([fn])};w.observer=new UIObserver(()=>{if(!document.getElementById(id))return;w.observer.disconnect();waiters.delete(id);for(const callback of w.callbacks)callback();});waiters.set(id,w);w.observer.observe(document.documentElement,{childList:true,subtree:true});}
+ return {UIObserver,every,whenElement,onResume:fn=>resume.add(fn),reconcile,inspect:()=>({displayObservers:observers.size,activeDisplayObservers:document.hidden?0:observers.size,activeDisplayTimers:[...jobs].filter(j=>j.timer!==null).length})};
+})();
+</script>
 
 <script id="iphone-early-stability-v11790">
 (function(){
@@ -33467,6 +33489,8 @@ document.addEventListener('click',e=>{
     const pin=recordPin807(record)||resolvePin(place,spot);
     const loc=detailCoordinates807(record,place);
     delete box.dataset.mapSource807;
+    box.__lookup807={recordId:record?.id||null,recordDate:record?.date||null,place,spot,normalizedPlace:mapKey807(place),imageSource:recordImage807(record)?'record':getMapSrc(place)?'place cache':null,pin:pin?{x:pin.x,y:pin.y,name:pin.name||spot}:null,coordinates:loc||null,assetPointer:localStorage.getItem('hera_place_assets_generation_802')};
+    window.heraMapDiagnostic807?.attach(record,box);
     box.onclick=null;
     box.onkeydown=null;
     box.removeAttribute('title');
@@ -37571,7 +37595,7 @@ document.addEventListener('click',e=>{
     }
   },true);
   if(typeof MutationObserver!=='undefined'){
-    const entry=document.getElementById('entry');if(entry)new MutationObserver(function(){setTimeout(syncPrevButtons162,0);}).observe(entry,{childList:true,subtree:true});
+    const entry=document.getElementById('entry');if(entry)new window.heraPower807.UIObserver(function(){setTimeout(syncPrevButtons162,0);}).observe(entry,{childList:true,subtree:true});
   }
   setTimeout(syncPrevButtons162,0);setTimeout(syncPrevButtons162,200);
 })();
@@ -37908,7 +37932,7 @@ document.addEventListener('click',e=>{
     }
   },true);
   if(typeof MutationObserver!=='undefined'){
-    const box=document.getElementById('segments');if(box)new MutationObserver(function(){setTimeout(fixAuditDom,0);}).observe(box,{childList:true,subtree:true});
+    const box=document.getElementById('segments');if(box)new window.heraPower807.UIObserver(function(){setTimeout(fixAuditDom,0);}).observe(box,{childList:true,subtree:true});
   }
 })();
 </script>
@@ -38226,7 +38250,7 @@ document.addEventListener('click',e=>{
   },true);
   if(typeof MutationObserver!=='undefined'){
     const box=document.getElementById('segments');
-    if(box)new MutationObserver(function(){setTimeout(fixDom165,0);}).observe(box,{childList:true,subtree:true});
+    if(box)new window.heraPower807.UIObserver(function(){setTimeout(fixDom165,0);}).observe(box,{childList:true,subtree:true});
   }
 
   /* 全体点検用の診断情報。登録元に明確な餌名がある竿変更記録を確認する。 */
@@ -39551,7 +39575,8 @@ document.addEventListener('click',e=>{
     wrap.dataset.hour=p.h;wrap.dataset.minute=p.m;wrap.dataset.partial='0';
     const value=wrap.querySelector('.seg-time-display-value-196');
     const btn=wrap.querySelector('.time-display');
-    if(value)value.textContent=p.h&&p.m?p.h+':'+p.m:'--:--';
+    const display=p.h&&p.m?p.h+':'+p.m:'--:--';
+    if(value&&value.textContent!==display)value.textContent=display;
     if(btn)btn.classList.toggle('is-empty',!(p.h&&p.m));
     syncSelected(wrap);
   }
@@ -39664,7 +39689,7 @@ document.addEventListener('click',e=>{
 
   const host=document.querySelector('#entry #segments');
   if(host){
-    const mo=new MutationObserver(function(){setTimeout(syncAll,0);});
+    const mo=new window.heraPower807.UIObserver(function(){setTimeout(syncAll,0);});
     mo.observe(host,{childList:true,subtree:true});
   }
   document.addEventListener('DOMContentLoaded',function(){setTimeout(syncAll,0);});
@@ -51792,6 +51817,8 @@ html.iphone-entry-v001 #entry .entry-weigh-fields label>span{
     return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
   }
   function applyAddButton(){
+    // The PC cleanup owns this element outside iPhone entry mode; do not recreate it.
+    if(!document.documentElement.classList.contains('iphone-entry-v001'))return;
     const card=document.querySelector('#entry .entry-fishing-card');
     const segs=document.getElementById('segments');
     if(!card||!segs)return;
@@ -52437,7 +52464,7 @@ html.iphone-entry-v001 #entry .iphone-map-note-v012{
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,350);});
   else setTimeout(boot,350);
   window.addEventListener('load',function(){setTimeout(boot,650);});
-  new MutationObserver(function(){installNowButtons();}).observe(document.documentElement,{childList:true,subtree:true});
+  new window.heraPower807.UIObserver(function(){installNowButtons();}).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 <!-- iPhone入力 Ver.0.12: 「現在」はiPhone Safariのタップで確実に設定。
@@ -52585,7 +52612,7 @@ html.iphone-entry-v001 #entry .iphone-map-note-v012{
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(install,350)});
   else setTimeout(install,350);
   window.addEventListener('load',function(){setTimeout(install,650)});
-  new MutationObserver(install).observe(document.documentElement,{childList:true,subtree:true});
+  new window.heraPower807.UIObserver(install).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 <!-- iPhone入力 Ver.0.15: マップボタンはPC版処理を完全に迂回し、バックアップ内画像＋ピンを直接表示。 -->
@@ -54868,7 +54895,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
 
     var picker=document.getElementById('v029Picker');
     if(!picker){
-      setTimeout(install,120);
+      window.heraPower807.whenElement('v029Picker',install);
       return;
     }
 
@@ -58362,7 +58389,7 @@ html:not(.iphone-entry-v001) #entry .entry-fishing-card .seg-row-actions-v11355 
       scheduled=true;
       requestAnimationFrame(function(){ scheduled=false; apply(); });
     };
-    new MutationObserver(schedule).observe(entry,{childList:true,subtree:true});
+    new window.heraPower807.UIObserver(schedule).observe(entry,{childList:true,subtree:true});
   }
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',function(){
@@ -58584,7 +58611,7 @@ html.iphone-entry-v001 #entry .entry-basic-card .weather-field > .quick > .weath
   window.addEventListener('load',function(){install();setTimeout(install,100);},{once:true});
   var detail=document.getElementById('detail');
   if(detail){
-    new MutationObserver(schedule).observe(detail,{childList:true,subtree:true});
+    new window.heraPower807.UIObserver(schedule).observe(detail,{childList:true,subtree:true});
   }
   document.addEventListener('click',function(e){
     if(e.target && (e.target.closest('.recent-card-item') || e.target.closest('.search-history-card-v1143') || e.target.closest('.day') || e.target.closest('.home-cal-day') || e.target.closest('.detail-nav-193'))){
@@ -59017,7 +59044,7 @@ html.pc-no-now-v11453 #entry .seg-finish-fishing-v046{
   window.addEventListener('load',function(){apply();setTimeout(apply,50);setTimeout(apply,300);setTimeout(apply,1000);});
   window.addEventListener('resize',apply);
   document.addEventListener('click',function(e){ if(e.target.closest('[data-page="entry"],#entry')) setTimeout(apply,20); });
-  new MutationObserver(function(){apply();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+  new window.heraPower807.UIObserver(function(){apply();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
 })();
 </script>
 
@@ -59337,7 +59364,7 @@ html.iphone-entry-v001 #entry .entry-fishing-card .segment-title{
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hide); else hide();
   window.addEventListener('load',function(){hide();setTimeout(hide,100);setTimeout(hide,700);});
-  new MutationObserver(function(){hide();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+  new window.heraPower807.UIObserver(function(){hide();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
 })();
 </script>
 
@@ -66387,7 +66414,7 @@ html.v619-home-open #iphoneMiniNavV050{
       home.style.setProperty('display','none','important');
     }
     document.documentElement.classList.remove('v619-home-open');
-    if(timer){clearInterval(timer);timer=null}
+    if(timer){timer.stop();timer=null}
   }
 
   function openHome(){
@@ -66429,8 +66456,8 @@ html.v619-home-open #iphoneMiniNavV050{
     home.setAttribute('aria-hidden','false');
     document.documentElement.classList.add('v619-home-open');
     paint();
-    if(timer)clearInterval(timer);
-    timer=setInterval(paint,30000);
+    if(timer)timer.stop();
+    timer=window.heraPower807.every(function(){paint();window.refreshHomeStatus807?.();},30000,()=>home.getAttribute('aria-hidden')!=='true');
     window.scrollTo(0,0);
   }
 
@@ -67871,7 +67898,7 @@ window.heraLiveBackToMainV624=function(){
     setTimeout(apply,220);
     setTimeout(apply,700);
   });
-  setInterval(apply,30000);
+  window.refreshHomeStatus807=apply;window.heraPower807.onResume(()=>{if(document.getElementById('iphoneHomeB619')?.getAttribute('aria-hidden')!=='true')apply();});
 })();
 </script>
 
@@ -77092,7 +77119,7 @@ html.iphone-entry-v001 .iphone-mono-icon-v11722{
     /* LIVEヘッダーのホームボタン：文字記号⌂をSVG線画に変更 */
     var home=document.getElementById('lv515BackMainV624');
     if(home){
-      home.innerHTML=
+      if(!home.querySelector('.v11722-home-svg')||home.querySelector('.v11721-home-label')?.textContent!=='ホーム')home.innerHTML=
         '<span class="iphone-mono-icon-v11722 v11722-home-svg">'+SVG.home+'</span>'+
         '<span class="v11721-home-label">ホーム</span>';
       home.setAttribute('aria-label','ホーム');
@@ -77129,7 +77156,7 @@ html.iphone-entry-v001 .iphone-mono-icon-v11722{
   window.addEventListener('load',schedule,{once:true});
 
   /* 画面切替で旧HTMLが再描画されても線画へ戻す */
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(window.__iphoneMonoIconTimerV11722);
     window.__iphoneMonoIconTimerV11722=setTimeout(apply,30);
   });
@@ -77795,6 +77822,7 @@ html.iphone-entry-v001 .iphone-mono-icon-v11722{
     var head=document.querySelector('#entry .entry-basic-head');
     if(!head)return;
 
+    if(head.querySelector('#basicHomeBtnV11730'))return; // The final home button owns this slot.
     var btn=document.getElementById('basicHomeBtnV11728');
     if(!btn){
       btn=document.createElement('button');
@@ -77846,7 +77874,7 @@ html.iphone-entry-v001 .iphone-mono-icon-v11722{
 
   window.addEventListener('load',schedule,{once:true});
 
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(window.__basicHomeTimerV11728);
     window.__basicHomeTimerV11728=setTimeout(apply,30);
   });
@@ -78298,7 +78326,7 @@ html.iphone-entry-v001 #entry{
 
   /* 旧スクリプトが後からホームを足しても、最終的に1個へ戻す */
   var timer=0;
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(timer);
     timer=setTimeout(apply,25);
   });
@@ -78465,7 +78493,7 @@ html.iphone-entry-v001 #entry{
 
   /* 旧重複対策スクリプトがボタンを再生成した時だけ再バインド */
   var timer=0;
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(timer);
     timer=setTimeout(bind,25);
   });
@@ -78897,7 +78925,7 @@ window.renderActivityCalcDetailV11736=function(){};
   }
 
   /* 釣行中は現在時刻が進むので1分ごとに再計算 */
-  setInterval(refresh,60000);
+  window.heraPower807.every(refresh,60000,()=>isRunning()&&!!document.getElementById('entry')?.offsetParent);
 
   document.addEventListener('visibilitychange',function(){
     if(!document.hidden)setTimeout(refresh,50);
@@ -79333,7 +79361,7 @@ window.renderActivityCalcDetailV11736=function(){};
   });
 
   var timer=0;
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(timer);
     timer=setTimeout(hideVersionBadge,25);
   });
@@ -79385,7 +79413,7 @@ window.renderActivityCalcDetailV11736=function(){};
 
   window.addEventListener('load',schedule,{once:true});
 
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     setTimeout(removeCloseButtons,20);
   });
   if(document.body)mo.observe(document.body,{childList:true,subtree:true});
@@ -79508,7 +79536,7 @@ window.renderActivityCalcDetailV11736=function(){};
 
   /* STEP切替でDOM/classが変わった時にも確認 */
   var timer=0;
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(timer);
     timer=setTimeout(function(){
       wrapShowStep3();
@@ -79577,7 +79605,7 @@ window.renderActivityCalcDetailV11736=function(){};
     if(!btn)return;
 
     /* 表示文言を変更 */
-    btn.textContent='← 釣行記録に戻る';
+    if(btn.textContent!=='← 釣行記録に戻る')btn.textContent='← 釣行記録に戻る';
 
     if(btn.dataset.backToLiveV11743==='1')return;
 
@@ -79608,7 +79636,7 @@ window.renderActivityCalcDetailV11736=function(){};
 
   /* STEP4再描画で旧ボタンが復活しても再バインド */
   var timer=0;
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     clearTimeout(timer);
     timer=setTimeout(bind,25);
   });
@@ -79658,7 +79686,7 @@ window.renderActivityCalcDetailV11736=function(){};
 
   window.addEventListener('load',schedule,{once:true});
 
-  var mo=new MutationObserver(function(){
+  var mo=new window.heraPower807.UIObserver(function(){
     setTimeout(apply,25);
   });
   if(document.body)mo.observe(document.body,{childList:true,subtree:true});
@@ -82748,5 +82776,77 @@ html.pc-photo-editor806 #photoPreview img{cursor:zoom-in}
 #detailMap .detail-coordinate-map807 a{font-size:12px;color:#6f472d;text-align:center}
 </style>
 <!-- Ver.1.1.807 standalone detail fix: date wrapping, saved map resolution, mobile header spacing. Finalized 2026-10-04. -->
+<style id="detail-actions807-style">@media(max-width:620px){
+ #detail .detail-header-sticky-v11466{grid-template-columns:minmax(0,1fr) auto auto!important;row-gap:16px!important;column-gap:7px!important}
+ #detail .detail-header-sticky-v11466>#dTitle{display:contents!important}
+ #detail #dTitle .detail-title-text,#detail #dTitle .detail-title-stats{position:relative!important;z-index:2!important}
+ #detail #dTitle .detail-title-text{grid-row:1;grid-column:1/-1;margin:0!important;padding:0!important}
+ #detail #dTitle .detail-title-stats{grid-row:2;grid-column:1;display:flex!important;align-items:center!important;gap:6px!important;min-width:0!important;margin:0!important;flex-wrap:nowrap!important}
+ #detail #dTitle .detail-title-stats .detail-chip{min-width:0!important;padding:5px 8px!important;font-size:21px!important;line-height:1.2!important;height:44px!important;box-sizing:border-box!important;white-space:nowrap!important}
+ #detail #dTitle .detail-title-stats .detail-chip small{font-size:10px!important}
+ #detail .detail-header-sticky-v11466>#detailEditTop{grid-row:2!important;grid-column:2!important}
+ #detail .detail-header-sticky-v11466>.close{grid-row:2!important;grid-column:3!important}
+ #detail .detail-header-sticky-v11466>#detailEditTop,#detail .detail-header-sticky-v11466>.close{height:44px!important;min-height:44px!important;padding:0 9px!important;font-size:14px!important;align-self:center!important}
+ #detail .detail-header-sticky-v11466>.detail-nav-193{grid-row:3!important;margin:0!important}
+}
+#mapDiagnostic807{width:min(760px,calc(100vw - 24px));max-height:85vh;box-sizing:border-box;padding:18px;background:#fffcf5;border:1px solid #c6a783;border-radius:14px;color:#34251a}
+#mapDiagnostic807::backdrop{background:#0009}
+#mapDiagnostic807 header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+#mapDiagnostic807 pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:58vh;overflow:auto;background:#f6f0e6;padding:12px}
+#mapDiagnostic807 button,.map-diagnostic-trigger807{padding:9px 12px;border:1px solid #b79a78;border-radius:8px;background:#fff7ea;color:#5e3b24;cursor:pointer}
+.map-diagnostic-trigger807{margin-top:10px;font-size:12px}
+</style>
+<script id="temporary-map-diagnostic807">/* Temporary, read-only diagnostic. Remove this script and its trigger to uninstall. */
+(()=>{
+ const target={date:'2026-09-25',place:'府中へら鮒センター',point:'奥の島',seat:'90番'};
+ const normalize=v=>normPlace(String(v||'').normalize('NFKC').trim()).replace(/\s/g,'');
+ const matches=r=>r&&r.date===target.date&&normalize(r.place)===normalize(target.place);
+ const imageInfo=v=>{if(typeof v==='string')return {present:!!v,length:v.length,kind:v.startsWith('data:image/')?v.slice(0,v.indexOf(';')>0?v.indexOf(';'):40):v.startsWith('blob:')?'blob URL':/^https?:/.test(v)?'http(s) URL':'other'};if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,/src|image|url|data/i.test(k)?imageInfo(x):safe(x)]));return {present:false};};
+ function safe(v,depth=0){if(depth>5)return '[深い項目省略]';if(typeof v==='string'){if(v.startsWith('data:image/')||v.startsWith('blob:'))return imageInfo(v);return v.length>500?v.slice(0,500)+'…':v;}if(Array.isArray(v))return v.slice(0,100).map(x=>safe(x,depth+1));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).slice(0,100).map(([k,x])=>[k,safe(x,depth+1)]));return v;}
+ function related(r){if(!r)return null;return {allKeys:Object.keys(r),values:Object.fromEntries(Object.entries(r).filter(([k])=>/^(id|date|place|point|spot|seat|seatNo|seatNumber)$|map|pin|latitude|longitude|location|coord/i.test(k)).map(([k,v])=>[k,safe(v)]))};}
+ function parse(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}catch(e){return {diagnosticParseError:e.message};}}
+ function placeMatch(store){return Object.entries(store||{}).filter(([k])=>normalize(k)===normalize(target.place));}
+ function mapsSummary(store){return {keys:Object.keys(store||{}),matches:placeMatch(store).map(([key,value])=>({key,image:imageInfo(value)}))};}
+ async function inspectAssets(){
+  const result={database:'heraDiaryPlaceAssets802',objectStore:'assets',mode:'readonly',pointerKey:'hera_place_assets_generation_802',generation:localStorage.getItem('hera_place_assets_generation_802'),availableDatabases:null};
+  if(indexedDB.databases){try{result.availableDatabases=(await indexedDB.databases()).map(d=>({name:d.name,version:d.version}));if(!result.availableDatabases.some(d=>d.name===result.database)){result.exists=false;return result;}}catch(e){result.catalogError=e.message;}}
+  const db=await new Promise((resolve,reject)=>{const q=indexedDB.open(result.database);q.onupgradeneeded=()=>{q.transaction.abort();};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('DBが存在しない、または読み取り不可（新規作成は中止）'));q.onblocked=()=>reject(Error('DBが他の処理で使用中です'));});
+  try{result.exists=true;result.objectStores=[...db.objectStoreNames];if(!db.objectStoreNames.contains('assets'))return result;
+   const keys=await new Promise((resolve,reject)=>{const q=db.transaction('assets','readonly').objectStore('assets').getAllKeys();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});result.storedKeys=keys;
+   const current=result.generation?result.generation+':maps':null;result.requestedKey=current;result.currentKeyExists=!!current&&keys.includes(current);
+   // Current plus at most two older map generations; never read photo stores or decode images.
+   const mapKeys=keys.filter(k=>typeof k==='string'&&k.endsWith(':maps'));const selected=[...new Set([current,...mapKeys.slice(-2)].filter(k=>k&&keys.includes(k)))];result.mapGenerations=[];
+   for(const key of selected){const summary=await new Promise((resolve,reject)=>{const q=db.transaction('assets','readonly').objectStore('assets').get(key);q.onsuccess=()=>resolve(mapsSummary(q.result));q.onerror=()=>reject(q.error);});result.mapGenerations.push({key,current:key===current,...summary});}
+   result.otherGenerationsNotRead=mapKeys.filter(k=>!selected.includes(k));return result;
+  }finally{db.close();}
+ }
+ async function run(){
+  const result={diagnostic:'807-map-readonly-v1',generatedAt:new Date().toISOString(),target,origin:location.origin,userAgent:navigator.userAgent,readOnly:true,imageBodiesIncluded:false};
+  try{await window.heraPlaceAssets802?.ready;result.assetCacheReady=true;}catch(e){result.assetCacheReady=false;result.assetCacheError=e.message;}
+  const users=parse(LS.user,[]),over=parse(LS.over,{}),byId=new Map(allData.map(r=>[String(r.id),r]));
+  const select=rows=>(Array.isArray(rows)?rows:[]).filter(matches).map(related);
+  result.records={localStorageUser:{key:LS.user,matches:select(users)},localStorageOverrides:{key:LS.over,matches:Object.entries(over||{}).filter(([id,r])=>matches(r)||matches(byId.get(id))).map(([key,r])=>({key,...related(r)}))},embedded:select(excelData),effective:select(allData)};
+  result.master={localStorageMaps:{key:LS.maps,...mapsSummary(parse(LS.maps,{}))},resolvedMapCache:{api:'load(LS.maps) → heraPlaceAssets802.read on iPhone',...mapsSummary(load(LS.maps,{}))},pins:{key:LS.pins,matches:placeMatch(parse(LS.pins,{})).map(([key,v])=>({key,values:safe(v)})),resolved:safe(placePins(target.place))},coordinates:{key:LS.locations,matches:placeMatch(parse(LS.locations,{})).map(([key,v])=>({key,values:safe(v)}))},otherCandidateKeys:Object.keys(localStorage).filter(k=>/place|map|pin|location/i.test(k)&&![LS.maps,LS.pins,LS.locations,LS.placePhotos].includes(k))};
+  try{result.indexedDB=await inspectAssets();}catch(e){result.indexedDB={error:e.message};}
+  const box=document.getElementById('detailMap');result.actualDetailLookup=box?.__lookup807?{...safe(box.__lookup807),renderedSource:box.dataset.mapSource807||null,isTargetDate:box.__lookup807.recordDate===target.date}:null;
+  result.search={placeRaw:target.place,normalized:normalize(target.place),pointCandidates:[target.point,target.point+' '+target.seat],mapLookup:'record mapImage/mapSrc/mapSnapshot/map → load(hera_v02_maps) by normalized place',pinLookup:'record mapPin/pin → placePins(place) by normalized spot/alias',coordinateLookup:'record location/coordinates/lat/lon → hera_v07_place_locations by normalized place',indexedDBLookup:result.indexedDB.requestedKey||null};
+  const hasImage=v=>typeof v==='string'?/^(data:image\/|blob:|https?:)/.test(v):!!(v&&typeof v==='object'&&(v.present&&v.length||Object.entries(v).some(([k,x])=>/^(src|dataUrl|image|mapImage)$/.test(k)&&hasImage(x))));
+  const effective=result.records.effective;const recordImage=effective.some(r=>Object.entries(r.values).some(([k,v])=>/^(mapImage|mapSrc|mapSnapshot|map)$/.test(k)&&hasImage(v)));const mapped=result.master.resolvedMapCache.matches.some(m=>hasImage(m.image));
+  const pinCount=result.master.pins.resolved?.length||0,hasCoords=result.master.coordinates.matches.length>0;
+  result.findings=[];if(!effective.length)result.findings.push('対象日・釣り場の有効釣行がこの端末の表示用データにありません。同期元・日付・釣り場表記を確認してください。');
+  if(mapped||recordImage)result.findings.push('画像候補があります。actualDetailLookupとキー・画像形式・読み取り状態を照合してください。');
+  else result.findings.push('この端末の現在の画像参照先には対象釣り場のマップ画像が見つかりません。');
+  if(result.indexedDB.mapGenerations?.some(g=>!g.current&&g.matches.length))result.findings.push('現在参照していないDB世代に対象画像があります。世代切替・復元履歴の確認が必要です。診断では参照先を変更しません。');
+  result.findings.push('釣り場ピン候補 '+pinCount+'件／釣り場座標候補 '+(hasCoords?'あり':'なし')+'。値の妥当性と対象釣座の一致は上記内容で確認してください。');
+  result.transferRoute={recordSync:'既存Supabase釣行同期は釣行recordのpayloadのみ。独立した釣り場マップ・ピン・位置マスターは同期しません。',photoSync:'Supabase写真同期は釣行写真用。釣り場マップのStorage転送は実装されていません。',backup:'通常完全バックアップJSONには maps/pins/locations が含まれます。復元時、iPhoneのmapsはheraDiaryPlaceAssets802/assetsへ保存されます。',next:'同じ診断をPCでも実行し、PC側に画像があるか比較してください。今回の診断自体はコピー・取込・復元を行いません。完全復元は他のデータも対象となるため、地図だけのために実行しないでください。'};
+  result.power=window.heraPower807?.inspect();return result;
+ }
+ let dialog,output='',busy=false;
+ async function open(){if(busy)return;if(!dialog){dialog=document.createElement('dialog');dialog.id='mapDiagnostic807';dialog.innerHTML='<header><strong>9/25 府中・奥の島90番 地図診断</strong><button type="button" data-copy>診断結果をコピー</button><button type="button" data-close>閉じる</button></header><p>読み取り専用です。画像本体・認証情報は結果に含めません。</p><pre tabindex="0"></pre><p role="status"></p>';dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.querySelector('[data-copy]').onclick=async()=>{if(!output)return;try{await navigator.clipboard.writeText(output);dialog.querySelector('[role=status]').textContent='診断結果をコピーしました。';}catch(e){const range=document.createRange();range.selectNodeContents(dialog.querySelector('pre'));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);dialog.querySelector('[role=status]').textContent='自動コピーできませんでした。選択された結果を長押ししてコピーしてください。';}};document.body.append(dialog);}if(!dialog.open)dialog.showModal();busy=true;dialog.querySelector('pre').textContent='保存先を読み取っています…';dialog.querySelector('[data-copy]').disabled=true;try{output=JSON.stringify(await run(),null,2);dialog.querySelector('pre').textContent=output;}catch(e){output=JSON.stringify({error:e.message},null,2);dialog.querySelector('pre').textContent=output;}finally{busy=false;dialog.querySelector('[data-copy]').disabled=false;}}
+ const button=()=>{const b=document.createElement('button');b.type='button';b.className='map-diagnostic-trigger807';b.textContent='9/25 府中・奥の島90番の地図を診断';b.onclick=open;return b;};
+ document.getElementById('settings').append(button());
+ window.heraMapDiagnostic807={run,open,attach(record,box){if(matches(record)&&!box.parentElement.querySelector('.map-diagnostic-trigger807'))box.after(button());}};
+})();
+</script>
 </body>
 </html>
