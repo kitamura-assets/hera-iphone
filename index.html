@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.807',revision:3,build:"2026/10/10 23:29",get label(){return 'Ver.'+this.version+'-r'+this.revision;}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.807',revision:4,build:"2026/10/14 開発版",get label(){return 'Ver.'+this.version+'-r'+this.revision;}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -10807,7 +10807,7 @@ function rodNameOptionsHtml(rod,current='',oldOptional=false){
   else if(names.length!==1&&!cur)html+='<option value="" selected>竿名を選択</option>';
   else html+='<option value="">竿名を選択</option>';
   if(cur&&!names.includes(cur))html+='<option value="'+esc(cur)+'" selected>'+esc(cur)+'</option>';
-  html+=names.map(x=>'<option value="'+esc(x)+'" '+(x===cur?'selected':'')+'>'+esc(x)+'</option>').join('');
+  html+=names.map(x=>'<option value="'+esc(x)+'" '+(x===cur?'selected':'')+'>'+esc(window.rodLabel807r3?.(rod,x)||x)+'</option>').join('');
   return html;
 }
 function rodWithNameText(segment){
@@ -82054,7 +82054,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const timer=setTimeout(cancel,90000);
     try{
       const r=await fetch(URL_BASE+path,{...options,headers:{apikey:key(),Authorization:'Bearer '+token,...options.headers},cache:'no-store',credentials:'omit',signal:abort.signal});
-      if(!r.ok){const e=Error('Supabase接続エラー（HTTP '+r.status+'）。通信・権限・SQL設定を確認してください。');e.status=r.status;throw e;}
+      if(!r.ok){let detail={};try{detail=await r.json();}catch(_){}const rod=/^\/rest\/v1\/rpc\/hera_rod_master_(read|write)807$/.test(path);const missing=rod&&(r.status===404||detail.code==='PGRST202');const e=Error(missing?'竿情報用RPCが見つかりません（'+path.split('/').pop()+'）。本番管理者に supabase-rod-master807.sql の適用・スキーマ反映を依頼してください。竿データは変更していません。':'Supabase接続エラー（HTTP '+r.status+'）。通信・権限・SQL設定を確認してください。');e.status=r.status;e.code=detail.code;throw e;}
       if(options.responseType==='blob')return await r.blob();
       if(options.responseType==='json')return await r.json();
       return r;
@@ -82220,7 +82220,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const ids=new Set();for(const m of rows){const id=m.owner_id+'/'+m.photo_id;if(ids.has(id)||!/^[-a-f0-9]{36}$/.test(m.owner_id)||!/^[a-f0-9]{64}$/.test(m.photo_id)||!/^[a-f0-9]{64}$/.test(m.sha256)||m.storage_path!==id||typeof m.record_id!=='string'||!m.record_id||!Number.isInteger(m.sort_order)||m.sort_order<0||m.sort_order>9||!Number.isSafeInteger(m.byte_size)||m.byte_size<1||m.byte_size>52428800||!['image/jpeg','image/png','image/webp','image/gif'].includes(m.mime)||![0,90,180,270].includes(m.rotation))throw Error('写真の紐付け情報が不正です。');ids.add(id);}
     return rows;
   }
-  async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){message(e.name==='AbortError'?'写真通信を停止しました。次回ボタンで再試行してください。':e.message);throw e;}finally{batch=null;controls();const valid=new Set(api.localRecords().map(r=>r.id));let count=0;for(const [rid,keys] of await heraPhotoMemory806.inventory())if(valid.has(rid))count+=keys.length;$('photo806Counts').textContent='端末内の釣行写真：'+count+'枚。未同期数・容量は「写真状況を確認」で確認できます。';}});}
+  async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){message(e.name==='AbortError'?'写真通信を停止しました。次回ボタンで再試行してください。':'エラー：'+e.message);throw e;}finally{batch=null;controls();const valid=new Set(api.localRecords().map(r=>r.id));let count=0;for(const [rid,keys] of await heraPhotoMemory806.inventory())if(valid.has(rid))count+=keys.length;$('photo806Counts').textContent='端末内の釣行写真：'+count+'枚。未同期数・容量は「写真状況を確認」で確認できます。';}});}
   async function upload(){
     if(!api.phone()||api.identity.role!=='reader')throw Error('写真送信はiPhone読取用アカウントで実行してください。');
     checkNetwork();const uid=api.identity.uid,photos=await scan(),receipts=await stateGet('up:'+uid);
@@ -82893,7 +82893,7 @@ html.pc-photo-editor806 #photoPreview img{cursor:zoom-in}
  const sync=document.createElement('section');sync.className='card rod-sync807';sync.id='rodSync807';sync.innerHTML='<h2>竿情報のクラウド同期</h2><p>釣行・写真とは別に、竿マスタを手動で同期します。PCの登録・編集・退役情報を正本として共有します。</p><button type="button" id="rodPush807">PCの竿情報をクラウドへ反映</button><button type="button" id="rodPull807">クラウドから竿情報を取得</button><p id="rodSyncStatus807" role="status">自動送受信は行いません。</p>';document.getElementById('settings').append(sync);
  const status=t=>{document.getElementById('rodSyncStatus807').textContent=t;};
  function controls(){document.getElementById('rodPush807').hidden=!writable();document.getElementById('rodPush807').disabled=syncBusy;document.getElementById('rodPull807').disabled=syncBusy;addRod.hidden=!writable();if(dialog.open&&!editing)render();}
- async function synchronize(push){if(syncBusy)return;if(push)assertWriter();if(editing)throw Error('編集中の竿情報を保存またはキャンセルしてください。');syncBusy=true;controls();status('竿情報を確認しています…');try{const api=window.heraSupabase806;await api.access();if(push&&api.identity.role!=='writer')throw Error('PC writerアカウントでログインしてください。');const before=localStorage.getItem(KEY),remote=await api.request('/rest/v1/rpc/hera_rod_master_read807',{});if(!remote||!Number.isSafeInteger(remote.revision)||remote.revision<0)throw Error('クラウドの竿情報を確認できません。');if(push){renderRodAnalysisV11425();const payload=snapshot(true);if(!confirm('PCの竿情報 '+Object.keys(payload.rods).length+'本をクラウドの正本として反映しますか？\n釣行・写真は変更しません。')){status('反映をキャンセルしました。');return;}const done=await api.request('/rest/v1/rpc/hera_rod_master_write807',{document:payload,expected_revision:remote.revision});if(!done||!Number.isSafeInteger(done.revision))throw Error('保存結果を確認できませんでした。再取得して確認してください。');status('竿情報をクラウドへ反映しました：'+Object.keys(payload.rods).length+'本（版 '+done.revision+'）。iPhoneで「クラウドから竿情報を取得」を押してください。');}else{if(remote.payload==null){status('クラウドに竿情報がありません。先にPCから反映してください。');return;}const payload=validatedSnapshot(remote.payload);if(localStorage.getItem(KEY)!==before)throw Error('確認中に端末の竿情報が変わりました。再実行してください。');if(!confirm('クラウドのPC正本 '+Object.keys(payload.rods).length+'本の竿情報を取得しますか？\n端末の竿マスタをPC正本に合わせます。釣行・写真は変更しません。')){status('取得をキャンセルしました。');return;}restore(payload);renderRodAnalysisV11425();if(dialog.open){selected=rodDisplayStats807.get(selected.rod+'__'+selected.name);if(selected)render();else close();}status('竿情報を取得しました：'+Object.keys(payload.rods).length+'本（版 '+remote.revision+'）。');}}catch(e){status('竿情報の同期に失敗しました：'+e.message);throw e;}finally{syncBusy=false;controls();}}
+ async function synchronize(push){if(syncBusy)return;if(push)assertWriter();if(editing)throw Error('編集中の竿情報を保存またはキャンセルしてください。');syncBusy=true;controls();status('竿情報を確認しています…');try{const api=window.heraSupabase806;await api.access();if(push&&api.identity.role!=='writer')throw Error('PC writerアカウントでログインしてください。');const before=localStorage.getItem(KEY),remote=await api.request('/rest/v1/rpc/hera_rod_master_read807',{});if(!remote||!Number.isSafeInteger(remote.revision)||remote.revision<0)throw Error('クラウドの竿情報を確認できません。');if(push){renderRodAnalysisV11425();const payload=snapshot(true);if(!confirm('PCの竿情報 '+Object.keys(payload.rods).length+'本をクラウドの正本として反映しますか？\n釣行・写真は変更しません。')){status('反映をキャンセルしました。');return;}const done=await api.request('/rest/v1/rpc/hera_rod_master_write807',{document:payload,expected_revision:remote.revision});if(!done||!Number.isSafeInteger(done.revision))throw Error('保存結果を確認できませんでした。再取得して確認してください。');status((done.unchanged?'変更なし：':'竿情報をクラウドへ反映しました：')+Object.keys(payload.rods).length+'本（版 '+done.revision+'）。iPhoneで「クラウドから竿情報を取得」を押してください。');}else{if(remote.payload==null){status('クラウドに竿情報がありません。先にPCから反映してください。');return;}const payload=validatedSnapshot(remote.payload);if(localStorage.getItem(KEY)!==before)throw Error('確認中に端末の竿情報が変わりました。再実行してください。');if(!confirm('クラウドのPC正本 '+Object.keys(payload.rods).length+'本の竿情報を取得しますか？\n端末の竿マスタをPC正本に合わせます。釣行・写真は変更しません。')){status('取得をキャンセルしました。');return;}restore(payload);renderRodAnalysisV11425();if(dialog.open){selected=rodDisplayStats807.get(selected.rod+'__'+selected.name);if(selected)render();else close();}status('竿情報を取得しました：'+Object.keys(payload.rods).length+'本（版 '+remote.revision+'）。');}}catch(e){status('竿情報の同期に失敗しました：'+e.message);throw e;}finally{syncBusy=false;controls();}}
  document.getElementById('rodPush807').onclick=()=>synchronize(true).catch(()=>{});document.getElementById('rodPull807').onclick=()=>synchronize(false).catch(()=>{});
  window.addEventListener('hera-auth806',controls);controls();
 })();
@@ -83067,3 +83067,115 @@ html.pc-photo-editor806 #photoPreview img{cursor:zoom-in}
 </script>
 </body>
 </html>
+
+<style id="settings807r4">#settingsSimple807r4{max-width:1040px;margin:auto;color:#493122}
+#settingsSimple807r4 .settings-group-r4{background:#fffaf3;border:1px solid #ddc4a7;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 3px 12px #61452908}
+#settingsSimple807r4 h2,#settingsSimple807r4>details>summary{font-size:20px;font-weight:700;margin:0 0 12px}
+#settingsSimple807r4 p{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+#settingsSimple807r4 summary{cursor:pointer;padding:10px 0;font-weight:600}
+#settingsSimple807r4 button{border:1px solid #cda77d;border-radius:10px;padding:13px 16px;margin:5px 8px 5px 0;min-height:44px;background:#fff6e7;color:#623d24;white-space:normal;max-width:100%;cursor:pointer}
+#settingsSimple807r4 button:disabled{opacity:.5;cursor:default}
+#settingsSimple807r4 button.sync-primary-r4{background:#70492f;color:#fff9ee!important;-webkit-text-fill-color:#fff9ee!important;border-color:#70492f;font-weight:600}
+#settingsSimple807r4 button.sync-primary-r4:hover:not(:disabled){background:#553420}
+#settingsSimple807r4 button:focus-visible{outline:3px solid #b88635;outline-offset:3px}
+#settingsSimple807r4 [data-result=error]{color:#922b20;background:#fff0e9;padding:10px;border-radius:8px}
+#settingsSimple807r4 button[hidden],#settingsSimple807r4 [hidden]{display:none!important}
+#settingsSimple807r4 .settings-status-r4{white-space:pre-wrap;margin:6px 0}
+#settingsSimple807r4 .settings-status-r4:empty{display:none}
+#settingsConnection807r4{display:inline-block;background:#e9f1df;border-radius:20px;padding:7px 12px;margin-right:12px;font-size:13px}
+#settingsAccount807r4{margin:10px 0;border-top:1px solid #ead9c5}
+#settingsAccount807r4 input{box-sizing:border-box;width:100%;min-width:0}
+#settings:has(#settingsSimple807r4)>.page-head{padding-top:12px}
+#settingsAdvanced807r4 .grid3{display:block}
+@media(max-width:620px){#settingsSimple807r4 .settings-group-r4{padding:14px;margin:12px 0}#settingsSimple807r4 h2,#settingsSimple807r4>details>summary{font-size:17px}#settingsSimple807r4 .settings-body-r4>button,#settingsSimple807r4 .settings-body-r4>details>button{width:100%;margin:5px 0}#settingsSimple807r4 .card{min-width:0}#settingsSimple807r4{min-width:0}#settingsSimple807r4 input{max-width:100%}}
+</style>
+<script id="settings807r4-script">/* Display only. Counts come from existing completed operations; never invent counts. */
+window.formatSyncResult807r4=function(text){
+ let s=String(text||'');
+ if(/失敗しました|完了できません|^エラー：/.test(s)){
+   s=s.replace(/^(?:竿情報の同期に失敗しました：|同期を完了できませんでした\n|地図同期を完了できませんでした：|完了できませんでした：|エラー：)/,'');
+   return 'エラー：'+s+(/SQL|再実行|再試行|ログイン/.test(s)?'':'\n接続・アカウント設定を確認して再実行してください。');
+ }
+ s=s.replace(/^受信完了\n新規追加：/,'取得完了：').replace(/同一内容：/g,'変更なし：').replace(/競合・未反映：/g,'競合・保留：');
+ if(/^取得完了：/.test(s))s+='\n既存のPC記録は上書きしていません。';
+ s=s.replace(/^竿情報をクラウドへ反映しました：/,'送信完了：').replace(/^竿情報を取得しました：/,'取得完了：');
+ s=s.replace(/^写真同期が完了しました\n新規送信：/,'送信完了：').replace(/本体の送信不要：/g,'画像本体の変更なし：');
+ s=s.replace(/^写真取得が完了しました\n新規取得：/,'取得完了：').replace(/／既存：/g,'／変更なし：');
+ s=s.replace('釣行未取込分は、当日JSON等で釣行をPCへ取り込んでから再実行してください。','釣行未取込分は、先に「iPhoneの釣行をクラウドから受信」で取り込んでから再実行してください。');
+ s=s.replace(/^クラウド初期登録が完了しました\nPC：\d+件\nSupabase：\d+件\n今回登録・確認：/,'送信完了：');
+ s=s.replace(/^クラウド同期が完了しました\n取得：/,'取得完了：');
+ s=s.replace(/^釣行の変更分登録：/,'送信完了：').replace(/^釣行の変更分取得：/,'取得完了：');
+ s=s.replace(/^現在のPC写真状態を正本として確定しました/,'写真状態の反映完了').replace(/^PC正本の写真一覧・向き・順序を反映しました/,'写真状態の取得完了');
+ s=s.replace(/^釣り場マップをクラウドへ反映しました。/,'地図の送信完了。').replace(/^釣り場マップを取得しました。/,'地図の取得完了。');
+ return s;
+};
+
+/* Presentation adapter: original handlers, role checks and storage paths are retained. */
+(()=>{
+ 'use strict';
+ const api=window.heraSupabase806, root=document.getElementById('settings');
+ if(!api||!root)return;
+ const phone=api.phone(), original=[...root.children].filter(e=>!e.classList.contains('page-head'));
+ const main=document.createElement('div');main.id='settingsSimple807r4';
+ const pairs=[];
+ const primary=new Set(['tripSend807r3','tripReceive807r3','photo806Upload','photo806Download','sb806Upload','sb806Download','rodPush807','rodPull807']);
+ function group(title,description,fold=false){
+   const box=document.createElement(fold?'details':'section');box.className='settings-group-r4';
+   const heading=document.createElement(fold?'summary':'h2');heading.textContent=title;box.append(heading);
+   const p=document.createElement('p');p.textContent=description;box.append(p);
+   const body=document.createElement('div');body.className='settings-body-r4';box.append(body);main.append(box);return body;
+ }
+ function action(body,id,label){
+   const source=document.getElementById(id);if(!source)return;
+   const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.actionSource=id;
+   if(primary.has(id))b.classList.add('sync-primary-r4');
+   b.onclick=()=>{if(!source.disabled&&!source.hidden){source.click();update();}};body.append(b);pairs.push([source,b]);
+ }
+ function mirror(body,id){const source=document.getElementById(id);if(!source)return;
+   const p=document.createElement('p');p.className='settings-status-r4';p.setAttribute('role','status');body.append(p);pairs.push([source,p]);
+ }
+ const connect=group('① クラウド接続設定','PCは管理・書込用、iPhoneは釣行入力用の既存アカウントを使用します。');
+ const badge=document.createElement('strong');badge.id='settingsConnection807r4';connect.append(badge);
+ const check=document.createElement('button');check.type='button';check.textContent='接続確認';check.onclick=()=>document.getElementById('sb806AuthForm').requestSubmit();connect.append(check);
+ const account=document.createElement('details');account.id='settingsAccount807r4';account.innerHTML='<summary>ログイン・アカウント設定</summary>';connect.append(account);
+ account.append(document.getElementById('sb806AuthForm'));mirror(connect,'sb806Status');
+ const receive=group(phone?'② iPhoneからPCへ送信':'② iPhoneからPCへの取り込み',phone?'保存済みの釣行と写真を、それぞれ手動で送信します。':'既存のPC記録は上書きせず、内容が違う同一IDは競合として保留します。');
+ action(receive,phone?'tripSend807r3':'tripReceive807r3',phone?'保存済み釣行をクラウドへ送信':'iPhoneの釣行をクラウドから受信');
+ action(receive,phone?'photo806Upload':'photo806Download',phone?'写真をクラウドへ同期':'クラウドから写真を取得');
+ mirror(receive,'tripStatus807r3');const conflicts=document.getElementById('tripConflicts807r3');if(conflicts)receive.append(conflicts);
+ const send=group(phone?'③ PCからiPhoneへ取得':'③ PCからiPhoneへの反映',phone?'PCで完成した釣行・日記と基本情報を取得します。釣行中は先に保存し、未送信の釣行は②で送信してください。':'PCで完成した釣行・日記と基本情報を、種別ごとにクラウドへ反映します。');
+ action(send,phone?'sb806Download':'sb806Upload',phone?'PCの釣行記録・日記を取得':'PCの釣行記録・日記をクラウドへ反映');
+ action(send,phone?'rodPull807':'rodPush807',phone?'PCの竿情報を取得':'PCの竿情報をクラウドへ反映');
+ mirror(send,'rodSyncStatus807');
+ const more=document.createElement('details');more.innerHTML='<summary>写真・釣り場マップ</summary>';send.append(more);
+ action(more,phone?'photo806PullState':'photo806PushState',phone?'PC正本の写真状態を取得':'PC正本の写真状態を反映');
+ if(phone)action(more,'photo806Download','必要な写真を取得');
+ action(more,phone?'placePull807':'placePush807',phone?'PCの釣り場マップを取得':'PCの釣り場マップを反映');mirror(more,'placeStatus807');
+ // Photo cancellation must remain available during any manual transfer.
+ const photoStatus=document.createElement('div');photoStatus.className='settings-photo-status-r4';main.append(photoStatus);
+ mirror(photoStatus,'photo806Status');action(photoStatus,'photo806Stop','写真通信を停止');
+ const backup=group('④ バックアップ・復元','同期とは別の操作です。復元は現在のデータを変更します。写真を含む大容量JSONには既存の容量制限があります。',true);
+ for(const selector of ['.settings-card-backup','.settings-card-restore']){const el=root.querySelector(selector);if(el)backup.append(el);}
+ const rods=document.createElement('button');rods.type='button';rods.textContent='竿別データを見る';rods.onclick=()=>{window.closeIPhoneHomeV619?.();goPage('rods');};send.append(rods);
+ const advanced=group('詳細設定・従来の操作','診断、初回写真確定、変更分同期、旧JSON取込を保持しています。通常の送受信には上の操作を使用してください。',true);
+ advanced.id='settingsAdvanced807r4';for(const el of original)advanced.append(el);
+ advanced.prepend(document.getElementById('sb806Count'));
+ if(phone)advanced.prepend(rods);
+ root.append(main);
+ const old=document.getElementById('pcIphoneSyncCardV11444');if(old){old.hidden=true;old.setAttribute('aria-hidden','true');}
+ const note=document.createElement('p');note.textContent='旧Vercel同期キー方式は現行Supabase同期に使用しません。旧コードは互換性のため保持しています。';advanced.prepend(note);
+ function update(){
+   const text=api.identity.role?(api.identity.role==='writer'?'接続済み · PC管理端末':'接続済み · iPhone入力端末'):'未接続';
+   if(badge.textContent!==text)badge.textContent=text;
+   check.disabled=!!api.identity.busy;
+   for(const [s,d]of pairs){if(d.tagName==='BUTTON'){d.disabled=s.disabled;d.hidden=s.hidden||(s.id==='photo806Stop'&&s.disabled);}else{const text=window.formatSyncResult807r4(s.textContent);if(d.textContent!==text)d.textContent=text;d.dataset.result=/^エラー：/.test(text)?'error':'normal';}}
+ }
+ // Observe only existing controls/status nodes. Never observe the mirrored output.
+ const observer=new MutationObserver(update);
+ const watch=()=>{observer.disconnect();if(document.hidden)return;for(const [s]of pairs)observer.observe(s,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','disabled']});update();};
+ document.addEventListener('visibilitychange',watch);window.addEventListener('hera-auth806',update);watch();
+ function nav(){const b=document.querySelector('#iphoneHomeB619 [data-home-nav="rods"]');if(!b)return;const existing=b.parentElement.querySelector('[data-home-nav="settings"]');if(existing)b.replaceWith(existing);else{b.dataset.homeNav='settings';b.innerHTML='<span class="ih619-nav-icon" aria-hidden="true">⚙</span><span>設定</span>';}}
+ nav();window.addEventListener('load',nav,{once:true});
+ document.addEventListener('click',e=>{const b=e.target.closest('#iphoneHomeB619 [data-home-nav="settings"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();window.closeIPhoneHomeV619?.();goPage('settings');window.scrollTo(0,0);},true);
+})();
+</script>
