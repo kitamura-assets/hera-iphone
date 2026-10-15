@@ -10834,7 +10834,7 @@ window.heraPlaceAssets802=(()=>{
     cache={[mapKey]:maps,[homeKey]:photos};durable={...cache};
     localStorage.removeItem(mapKey);localStorage.removeItem(homeKey);
   }
-  const api={pointer,stage,activate,has:k=>k===mapKey||k===homeKey,
+  const api={pointer,stage,activate,activateAdditive(generation,maps,photos){localStorage.setItem(pointer,generation);cache={[mapKey]:maps,[homeKey]:photos};durable={...cache};},has:k=>k===mapKey||k===homeKey,
     read(k){return {...legacy(k),...(readyDone&&cache[k]?cache[k]:{})};},
     write(k,value){
       if(!readyDone&&localStorage.getItem(pointer))return api.ready;
@@ -11142,7 +11142,7 @@ function collectValidTrips806(base,user,over,trash){
     if(validTrip806(r,id))records.set(id,{...(records.get(id)||{}),...r});
   }
   const deleted=window.heraTripDeletion807.snapshot().deleted;
-  return [...records.values()].filter(r=>!own(trash,r.id)&&!own(deleted,r.id));
+  return [...records.values()].filter(r=>!own(trash,r.id)&&!own(deleted,r.id)).map(r=>window.heraMigrationSupplement807r4?.record(r)||r);
 }
 
 function activeData(){return collectValidTrips806(excelData,load(LS.user,[]),load(LS.over,{}),load(LS.trash,{})).map(norm)}
@@ -83206,17 +83206,42 @@ window.formatSyncResult807r4=function(text){
  const CHUNK=256*1024;
  function equal(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const k=Object.keys(a);return k.length===Object.keys(b).length&&k.every(x=>Object.prototype.hasOwnProperty.call(b,x)&&equal(a[x],b[x]));}
  async function packPhoto(row,parts){
-  photoValid(row);const metadata={},strings=[];
+  if(!row.kind)photoValid(row);const metadata={},strings=[];
   for(const [field,value]of Object.entries(row)){
    if(typeof value!=='string'){Object.defineProperty(metadata,field,{value,enumerable:true});continue;}
    const chunks=[];for(let i=0;i<value.length||i===0;i+=CHUNK){const bytes=enc.encode(JSON.stringify(value.slice(i,i+CHUNK)));chunks.push({length:bytes.length,sha256:await hash(bytes)});if(parts)parts.push(new Blob([bytes]));}
    strings.push({field,chunks});
   }
-  return {key:row.key,recordId:row.recordId,metadata,strings};
+  return {key:row.key,...(row.kind?{kind:row.kind}:{recordId:row.recordId}),metadata,strings};
+ }
+
+ const MASTER_KEYS=['hera_v02_maps','hera_v08_place_photos','hera_v06_map_pins','hera_v07_place_locations'];
+ const SUP='hera_migration_diary807r4:';
+ const empty=v=>v===undefined||v===null||v===''||(Array.isArray(v)&&v.length===0);
+ const text=v=>String(v??'').normalize('NFKC').trim();
+ function identity(a,b){return !!a&&!!b&&a.id===b.id&&a.date===b.date&&text(a.place)!==''&&text(a.place)===text(b.place)&&a.count!=null&&b.count!=null&&Number(a.count)===Number(b.count)&&['point','spot','seat'].every(k=>empty(a[k])||empty(b[k])||text(a[k])===text(b[k]));}
+ function supplementRecord(r){const raw=localStorage.getItem(SUP+encodeURIComponent(r.id));if(!raw||!empty(r.diary)||!empty(r.comment))return r;try{const x=JSON.parse(raw);return identity(r,x.record)&&stable(r)===x.baseline?{...r,diary:x.diary}:r;}catch{return r;}}
+
+ window.heraMigrationSupplement807r4={record:supplementRecord};
+ async function masterSnapshot(){await window.heraPlaceAssets802?.ready;const result={};for(const k of MASTER_KEYS){const base=window.heraPlaceAssets802?.has(k)?window.heraPlaceAssets802.read(k):JSON.parse(localStorage.getItem(k)||'{}');result[k]=base;}return result;}
+ const supplementalReady=Promise.resolve();
+ async function addMaster(row){
+  if(!MASTER_KEYS.includes(row.kind)||typeof row.name!=='string'||['__proto__','constructor','prototype'].includes(row.name))throw Error('釣り場目録が不正です。');
+  const before=await masterSnapshot(),now=before[row.kind][row.name];if(!empty(now))return equal(now,row.value)?'same':'conflict';
+  const next={...before[row.kind],[row.name]:row.value},assets=window.heraPlaceAssets802;
+  if(assets?.has(row.kind)){
+   if(!assets.activateAdditive)throw Error('画面を再読み込みしてください。追加保存機能が古い状態です。');
+   const maps=row.kind===MASTER_KEYS[0]?next:before[MASTER_KEYS[0]],homes=row.kind===MASTER_KEYS[1]?next:before[MASTER_KEYS[1]],generation=await assets.stage(maps,homes);
+   if(!equal(before,await masterSnapshot()))throw Error('釣り場情報が変更されたため中止しました。');
+   if(api().pendingEntry()||api().identity?.busy)throw Error('入力・同期が開始されたため中止しました。');
+   assets.activateAdditive(generation,maps,homes);
+  }else{if(!equal(before,await masterSnapshot()))throw Error('釣り場情報が変更されたため中止しました。');localStorage.setItem(row.kind,JSON.stringify(next));}
+  return 'add';
  }
  let downloadURL;
  async function exportFile(progress){
   if(standalone())throw Error('書き出しは移行元のSafariで行ってください。');
+  await supplementalReady;const masters=await masterSnapshot();
   const records=trips(),deletions=tomb(),history=await deletionHistory(),signature=stable([records,deletions,history]);
   const ids=new Set(records.map(r=>r.id)),parts=[],photos=[];const db=await openExisting('heraDiaryPhotos');
   try{
@@ -83228,11 +83253,13 @@ window.formatSyncResult807r4=function(text){
    if(stable(beforeKeys)!==stable(await keys(db,'photos')))throw Error('写真が変更されました。書き出し直してください。');
    for(const p of photos)if(stable(await packPhoto(await read(db,'photos',p.key)))!==stable(p))throw Error('写真が変更されました。書き出し直してください。');
    if(signature!==stable([trips(),tomb(),await deletionHistory()]))throw Error('釣行データが変更されました。書き出し直してください。');
-   const manifest=frame({format:'hera-additive-transfer',version:2,records,deletions,photoDeleted:history,photos});
+   const assets=[];for(const kind of MASTER_KEYS)for(const [name,value]of Object.entries(masters[kind])){if(empty(value))continue;assets.push(await packPhoto({key:kind+':'+name,kind,name,value},parts));}
+   const checkMasters=await masterSnapshot();if(!equal(masters,checkMasters))throw Error('釣り場情報が変更されました。書き出し直してください。');
+   const manifest=frame({format:'hera-additive-transfer',version:3,records,deletions,photoDeleted:history,photos,assets});
    const prefix=MAGIC+String(manifest.length).padStart(10,'0')+'\n';
    const file=new Blob([prefix,manifest,...parts],{type:'application/octet-stream'});
    if(downloadURL)URL.revokeObjectURL(downloadURL);downloadURL=URL.createObjectURL(file);
-   return {url:downloadURL,name:'へら日誌_Safari移行_'+new Date().toISOString().slice(0,10)+'.hera-transfer',records:records.length,photos:photos.length};
+   return {url:downloadURL,name:'へら日誌_Safari移行_'+new Date().toISOString().slice(0,10)+'.hera-transfer',records:records.length,photos:photos.length,assets:assets.length};
   }finally{db?.close();}
  }
  async function inspect(file,progress){
@@ -83240,14 +83267,15 @@ window.formatSyncResult807r4=function(text){
   if(!prefix.startsWith(MAGIC)||!/^\d{10}\n$/.test(prefix.slice(MAGIC.length)))throw Error('移行専用ファイルを選択してください。');
   const n=Number(prefix.slice(MAGIC.length, -1));if(n>MAX)throw Error('目録が大きすぎます。');
   const m=JSON.parse(await file.slice(prefix.length,prefix.length+n).text());
-  if(m.format!=='hera-additive-transfer'||![1,2].includes(m.version)||!Array.isArray(m.records)||!Array.isArray(m.photos)||!m.photoDeleted||typeof m.photoDeleted!=='object')throw Error('移行形式が不正です。');
+  if(m.format!=='hera-additive-transfer'||![1,2,3].includes(m.version)||!Array.isArray(m.records)||!Array.isArray(m.photos)||!m.photoDeleted||typeof m.photoDeleted!=='object')throw Error('移行形式が不正です。');
   m.deletions=window.heraTripDeletion807.validate(m.deletions);
   for(const v of Object.values(m.photoDeleted))if(!Array.isArray(v)||v.some(x=>typeof x!=='string'))throw Error('写真削除履歴が不正です。');
   const ids=new Set();for(const r of m.records){if(!validTrip806(r)||ids.has(r.id))throw Error('釣行IDが不正または重複しています。');ids.add(r.id);}
+  if(m.version===3&&!Array.isArray(m.assets))throw Error("釣り場目録が不正です。");
   let offset=prefix.length+n;const seen=new Set();
-  for(const p of m.photos){
-   if(seen.has(p.key)||!ids.has(p.recordId))throw Error('写真目録が不正です。');seen.add(p.key);
-   if(m.version===2){
+  for(const p of [...m.photos,...(m.assets||[])]){
+   if(seen.has(p.key)||(p.kind?!MASTER_KEYS.includes(p.kind):!ids.has(p.recordId)))throw Error('写真目録が不正です。');seen.add(p.key);
+   if(m.version>=2){
     if(!p.metadata||typeof p.metadata!=='object'||Array.isArray(p.metadata)||!Array.isArray(p.strings))throw Error('写真目録が不正です。');
     const fields=new Set(Object.keys(p.metadata));
     for(const entry of p.strings){if(typeof entry.field!=='string'||fields.has(entry.field)||!Array.isArray(entry.chunks)||!entry.chunks.length)throw Error('写真分割目録が不正です。');fields.add(entry.field);
@@ -83263,47 +83291,65 @@ window.formatSyncResult807r4=function(text){
   let row;
   if(p.strings){row={...p.metadata};for(const e of p.strings){const values=[];for(const c of e.chunks){const v=await decode(c);if(typeof v!=='string'||v.length>CHUNK)throw Error('写真分割データが不正です。');values.push(v);}Object.defineProperty(row,e.field,{value:values.join(''),enumerable:true,writable:true,configurable:true});}}
   else row=await decode(p);
-  photoValid(row);if(row.key!==p.key||row.recordId!==p.recordId)throw Error('写真の紐付けが一致しません。');return row;
+  if(p.kind){if(row.kind!==p.kind||typeof row.name!=='string'||row.key!==row.kind+':'+row.name||['__proto__','constructor','prototype'].includes(row.name))throw Error('釣り場データが不正です。');}else photoValid(row);if(row.key!==p.key||row.recordId!==p.recordId)throw Error('写真の紐付けが一致しません。');return row;
  }
  function classify(records,existing,deletions,incoming){const map=new Map(existing.map(r=>[r.id,r]));return records.map(r=>({r,state:blocked(r.id,deletions)||blocked(r.id,incoming)?'deleted':map.has(r.id)?stable(r)===stable(map.get(r.id))?'same':'conflict':'add'}));}
  async function addPhoto(db,row){return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite'),s=tx.objectStore('photos');let result='same';const q=s.get(row.key);q.onsuccess=()=>{if(q.result){result=equal(q.result,row)?'same':'conflict';return;}const scan=s.openCursor();scan.onsuccess=()=>{const c=scan.result;if(!c){s.add(row);result='add';return;}if(c.value.recordId===row.recordId&&row.photo_id&&c.value.photo_id===row.photo_id){result='conflict';return;}c.continue();};};tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('写真追加中止'));});}
+
+ async function diagnose(file,m){
+  const current=new Map(trips().map(r=>[r.id,r])),report=[],local=tomb(),history=await deletionHistory();
+  for(const {r,state}of classify(m.records,[...current.values()],local,m.deletions))if(state==='conflict')report.push({type:'record',id:r.id,date:r.date,fields:[...new Set([...Object.keys(r),...Object.keys(current.get(r.id))])].filter(k=>!equal(r[k],current.get(r.id)[k])),reason:identity(r,current.get(r.id))?'同じ釣行。既存値は保持し、空の日記・不足写真のみ追加可能':'識別情報が異なるため保留'});
+  const db=await openExisting('heraDiaryPhotos');try{for(const p of m.photos){const row=await photoFrom(file,p),dest=current.get(row.recordId);let reason='未登録写真・追加候補';
+   if(blocked(row.recordId,local)||blocked(row.recordId,m.deletions)||(history[row.recordId]||[]).includes(row.photo_id)||(m.photoDeleted[row.recordId]||[]).includes(row.photo_id))reason='削除履歴あり・除外';
+   else if(dest&&!equal(dest,m.records.find(r=>r.id===row.recordId))&&!identity(dest,m.records.find(r=>r.id===row.recordId)))reason='釣行識別情報が異なる・保留';
+   else{const saved=await read(db,'photos',row.key);if(saved)reason=equal(saved,row)?'同じ写真・スキップ':'同じ写真キーに別内容・保留';}
+   report.push({type:'photo',key:row.key,id:row.recordId,reason});
+  }}finally{db?.close();}return report;
+ }
  async function importFile(file,m,progress){
   if(!standalone())throw Error('追加取り込みはホーム画面アプリ版で行ってください。Safariは変更しません。');
   if(!navigator.locks?.request)throw Error('安全な追加に必要な排他制御が利用できません。');
   if(api().pendingEntry())throw Error('入力中の釣行を保存してから移行してください。');
   return navigator.locks.request('hera-trip-inbox-import807r3',{mode:'exclusive'},async()=>{
-   const result={recordAdd:0,recordSame:0,recordConflict:0,deleted:0,photoAdd:0,photoSame:0,photoConflict:0,photoDeleted:0};let db;
+   const result={recordAdd:0,recordSame:0,recordConflict:0,deleted:0,photoAdd:0,photoSame:0,photoConflict:0,photoDeleted:0,diaryAdd:0,masterAdd:0,masterSame:0,masterConflict:0,details:[]};let db;
    try{
     const existing=trips(),local=tomb(),states=classify(m.records,existing,local,m.deletions),allowed=new Set();
     // Keep destination records untouched even when source deletion history conflicts.
     const safeDeletes={version:1,seedVersion:0,deleted:{},restored:{}};
     const destIds=new Set(existing.map(r=>r.id));for(const [id,value]of Object.entries(m.deletions.deleted))if(!destIds.has(id))safeDeletes.deleted[id]=value;
     window.heraTripDeletion807.merge(safeDeletes,{});
-    for(const {r,state}of states){if(api().pendingEntry())throw Error('入力が始まったため中止しました。');if(state==='deleted'){result.deleted++;continue;}if(state==='conflict'){result.recordConflict++;continue;}
+    for(const {r,state}of states){if(api().pendingEntry())throw Error('入力が始まったため中止しました。');if(state==='deleted'){result.deleted++;continue;}if(state==='conflict'){
+      result.recordConflict++;const dest=trips().find(x=>x.id===r.id),differences=[...new Set([...Object.keys(dest||{}),...Object.keys(r)])].filter(k=>!equal(dest?.[k],r[k]));
+      result.details.push({type:'record',id:r.id,date:r.date,fields:differences,reason:identity(dest,r)?'同じ釣行・項目差分（既存値保持）':'釣行識別情報が不一致・保留'});
+      if(identity(dest,r)){allowed.add(r.id);const diary=!empty(r.diary)?r.diary:r.comment;if(empty(dest.diary)&&empty(dest.comment)&&typeof diary==='string'&&diary.trim()){
+       const key=SUP+encodeURIComponent(r.id);if(localStorage.getItem(key)===null){localStorage.setItem(key,JSON.stringify({record:{id:r.id,date:r.date,place:r.place,count:r.count,point:r.point,spot:r.spot,seat:r.seat},baseline:stable(dest),diary}));result.diaryAdd++;}
+      }}continue;}
+
      if(state==='same'){result.recordSame++;allowed.add(r.id);continue;}
      const key=window.heraReceivedTrips807r3.prefix+encodeURIComponent(r.id);
      if(localStorage.getItem(key)!==null){result.recordConflict++;continue;}
      localStorage.setItem(key,JSON.stringify(r));result.recordAdd++;allowed.add(r.id);
     }
-    const history=await deletionHistory();db=await photoDB();const expected=new Map(m.records.map(r=>[r.id,stable(r)]));
+    const history=await deletionHistory();db=await photoDB();const expected=new Map(m.records.map(r=>[r.id,r]));
     for(const p of m.photos){if(api().pendingEntry())throw Error('入力が始まったため中止しました。');
-     if(!allowed.has(p.recordId)||!trips().some(r=>r.id===p.recordId&&stable(r)===expected.get(p.recordId))){result.photoConflict++;continue;}
+     if(!allowed.has(p.recordId)||!trips().some(r=>r.id===p.recordId&&(equal(r,expected.get(p.recordId))||identity(r,expected.get(p.recordId))))){result.photoConflict++;result.details.push({type:'photo',key:p.key,id:p.recordId,reason:'対象釣行なし・削除済み・識別情報不一致'});continue;}
      const row=await photoFrom(file,p);
-     if(window.heraTripDeletion807.has(row.recordId)||(history[row.recordId]||[]).includes(row.photo_id)||(m.photoDeleted[row.recordId]||[]).includes(row.photo_id)){result.photoDeleted++;continue;}
-     const state=await addPhoto(db,row);result[{add:'photoAdd',same:'photoSame',conflict:'photoConflict'}[state]]++;progress('追加済み：釣行 '+result.recordAdd+'件／写真 '+result.photoAdd+'枚');
+     if(window.heraTripDeletion807.has(row.recordId)||(history[row.recordId]||[]).includes(row.photo_id)||(m.photoDeleted[row.recordId]||[]).includes(row.photo_id)){result.photoDeleted++;result.details.push({type:'photo',key:p.key,reason:'削除履歴あり'});continue;}
+     const state=await addPhoto(db,row);if(state==='conflict')result.details.push({type:'photo',key:p.key,reason:'写真キー・順序または写真IDが既存と重複し内容が異なる'});result[{add:'photoAdd',same:'photoSame',conflict:'photoConflict'}[state]]++;progress('追加済み：釣行 '+result.recordAdd+'件／写真 '+result.photoAdd+'枚');
     }
+    for(const p of m.assets||[]){if(api().pendingEntry())throw Error('入力開始のため中止しました。');const row=await photoFrom(file,p),state=await addMaster(row);result[{add:'masterAdd',same:'masterSame',conflict:'masterConflict'}[state]]++;if(state==='conflict')result.details.push({type:'master',key:row.key,reason:'既存の釣り場情報と異なるため保留'});}
     return result;
    }catch(e){throw Error(e.message+'\n追加済み：釣行 '+result.recordAdd+'件／写真 '+result.photoAdd+'枚。既存データは上書きしていません。同じファイルで再実行できます。');}finally{db?.close();}
   });
  }
  window.heraAdditiveTransfer807r4={exportFile,inspect,importFile,classify};
- function mount(){const root=document.getElementById('settingsSimple807r4');if(!root)return;const box=document.createElement('details');box.className='card';box.innerHTML='<summary>Safari → ホーム画面アプリへ移行</summary><p>移行中は釣行編集・写真操作・同期をしないでください。Safariのデータは残ります。</p><p>① Safariでファイルを作成・「ファイルに保存」 → ② ホーム画面版で同じファイルを選択 → ③ 確認して追加。</p><button type="button" data-export>Safariで移行ファイルを作成</button><a data-download hidden>移行ファイルを保存</a><p>ホーム画面版で選択（既存IDは上書きしません）</p><input type="file" data-input><button type="button" data-import disabled>確認して追加する</button><pre data-status style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>';
+ function mount(){if(Object.keys(localStorage).some(k=>k.startsWith(SUP))&&typeof refresh==='function')refresh();const root=document.getElementById('settingsSimple807r4');if(!root)return;const box=document.createElement('details');box.className='card';box.innerHTML='<summary>Safari → ホーム画面アプリへ移行</summary><p>移行中は釣行編集・写真操作・同期をしないでください。Safariのデータは残ります。</p><p>① Safariでファイルを作成・「ファイルに保存」 → ② ホーム画面版で同じファイルを選択 → ③ 確認して追加。</p><button type="button" data-export>Safariで移行ファイルを作成</button><a data-download hidden>移行ファイルを保存</a><p>ホーム画面版で選択（既存IDは上書きしません）</p><input type="file" data-input><button type="button" data-import disabled>確認して追加する</button><button type="button" data-copy>判定結果をコピー</button><pre data-status style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>';
   root.append(box);const out=box.querySelector('[data-status]'),exp=box.querySelector('[data-export]'),input=box.querySelector('[data-input]'),imp=box.querySelector('[data-import]'),link=box.querySelector('[data-download]');let m,file,busy=false;
   const status=t=>out.textContent=t,controls=()=>{exp.disabled=busy||standalone();input.disabled=busy||!standalone();imp.disabled=busy||!m||!standalone();};
   async function run(fn){if(busy)return;busy=true;controls();try{await fn();}catch(e){status('エラー：'+e.message);}finally{busy=false;controls();}}
-  exp.onclick=()=>run(async()=>{link.hidden=true;const r=await exportFile(status);link.href=r.url;link.download=r.name;link.hidden=false;link.style.display='block';status('作成完了：釣行 '+r.records+'件／写真 '+r.photos+'枚。下の「移行ファイルを保存」を押し、ファイルに保存してください。Safari側は変更していません。');});
-  input.onchange=()=>run(async()=>{m=null;file=input.files[0];if(!file)return;const checked=await inspect(file,status);m=checked;const plan=classify(m.records,trips(),tomb(),m.deletions);status('釣行：追加候補 '+plan.filter(x=>x.state==='add').length+'件／同一 '+plan.filter(x=>x.state==='same').length+'件／競合 '+plan.filter(x=>x.state==='conflict').length+'件／削除済み '+plan.filter(x=>x.state==='deleted').length+'件\n写真 '+m.photos.length+'枚（既存写真・削除履歴は追加時に照合）。');});
-  imp.onclick=()=>run(async()=>{if(!confirm('未登録の釣行・写真だけを追加します。既存IDの内容違いは保留します。続けますか？'))return;const r=await importFile(file,m,status);status('完了：釣行追加 '+r.recordAdd+'件／同一 '+r.recordSame+'件／競合 '+r.recordConflict+'件／削除済み除外 '+r.deleted+'件\n写真追加 '+r.photoAdd+'枚／同一 '+r.photoSame+'枚／競合・対象外 '+r.photoConflict+'枚／削除済み除外 '+r.photoDeleted+'枚\n画面を開き直して確認してください。Safariはまだ削除しないでください。');});controls();
+  exp.onclick=()=>run(async()=>{link.hidden=true;const r=await exportFile(status);link.href=r.url;link.download=r.name;link.hidden=false;link.style.display='block';status('作成完了：釣行 '+r.records+'件／写真 '+r.photos+'枚／釣り場情報 '+r.assets+'件。下の「移行ファイルを保存」を押し、ファイルに保存してください。Safari側は変更していません。');});
+  input.onchange=()=>run(async()=>{m=null;file=input.files[0];if(!file)return;const checked=await inspect(file,status);m=checked;const plan=classify(m.records,trips(),tomb(),m.deletions),report=await diagnose(file,m);status('釣行：追加候補 '+plan.filter(x=>x.state==='add').length+'件／同一 '+plan.filter(x=>x.state==='same').length+'件／競合 '+plan.filter(x=>x.state==='conflict').length+'件／削除済み '+plan.filter(x=>x.state==='deleted').length+'件\n写真 '+m.photos.length+'枚／釣り場情報 '+(m.assets||[]).length+'件（既存値・削除履歴は追加時にも照合）。\n差分・写真判定：\n'+JSON.stringify(report,null,2));});
+  imp.onclick=()=>run(async()=>{if(!confirm('未登録の釣行・写真・空の日記・未登録の釣り場情報だけを追加します。既存値は上書きしません。続けますか？'))return;const r=await importFile(file,m,status);status('完了：釣行追加 '+r.recordAdd+'件／同一 '+r.recordSame+'件／競合 '+r.recordConflict+'件／削除済み除外 '+r.deleted+'件\n写真追加 '+r.photoAdd+'枚／同一 '+r.photoSame+'枚／競合・対象外 '+r.photoConflict+'枚／削除済み除外 '+r.photoDeleted+'枚\n空の日記追加 '+r.diaryAdd+'件／釣り場情報追加 '+r.masterAdd+'件／同一 '+r.masterSame+'件／保留 '+r.masterConflict+'件\n差分・除外理由：\n'+JSON.stringify(r.details,null,2)+'\n画面を開き直して確認してください。Safariはまだ削除しないでください。');});box.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(out.textContent);alert('判定結果をコピーしました。');}catch{alert('コピーできませんでした。表示結果を選択してコピーしてください。');}};controls();
  }
  if(document.readyState==='complete')mount();else window.addEventListener('load',mount,{once:true});
 })();
