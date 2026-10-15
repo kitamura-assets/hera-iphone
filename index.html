@@ -83354,3 +83354,58 @@ window.formatSyncResult807r4=function(text){
  if(document.readyState==='complete')mount();else window.addEventListener('load',mount,{once:true});
 })();
 </script>
+
+<script id="selected-diary807r4">/* Selected diary-only transfer; no network, no record/photo/master replacement. */
+(()=>{
+'use strict';
+const PREFIX='hera_migration_diary807r4:',api=()=>window.heraSupabase806;
+const empty=v=>v==null||v==='';
+const text=v=>String(v??'').normalize('NFKC').trim();
+const stable=v=>JSON.stringify(sort(v));
+function sort(v){return Array.isArray(v)?v.map(sort):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,sort(v[k])])):v;}
+const isHome=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+const diary=r=>!empty(r.diary)?r.diary:r.comment;
+function same(a,b){return a.id===b.id&&a.date===b.date&&text(a.place)!==''&&text(a.place)===text(b.place)&&a.count!=null&&b.count!=null&&Number(a.count)===Number(b.count)&&['point','spot','seat'].every(k=>empty(a[k])||empty(b[k])||text(a[k])===text(b[k]));}
+function documentFor(ids){
+ if(api().phone())throw Error('PCで日記を選択してください。');
+ const selected=new Set(ids),records=api().localRecords().filter(r=>selected.has(r.id)&&!window.heraTripDeletion807.has(r.id));
+ if(!records.length||records.length!==selected.size)throw Error('対象が変更されたか削除済みです。選択し直してください。');
+ return {format:'hera-selected-diary',version:1,entries:records.map(r=>{const value=diary(r);if(typeof value!=='string'||!value.trim())throw Error('空の日記は送れません。');const identity={};for(const k of ['id','date','place','count','point','spot','seat'])if(r[k]!==undefined)identity[k]=r[k];return {record:identity,diary:value};})};
+}
+function validate(doc){
+ if(doc?.format!=='hera-selected-diary'||doc.version!==1||!Array.isArray(doc.entries)||!doc.entries.length||doc.entries.length>100)throw Error('日記専用ファイルを選択してください（100件まで）。');
+ const seen=new Set();for(const e of doc.entries){if(!validTrip806(e.record)||seen.has(e.record.id)||typeof e.diary!=='string'||!e.diary.trim()||typeof e.record.place!=='string'||e.record.count==null||!Number.isFinite(Number(e.record.count)))throw Error('日記の照合情報が不正です。');seen.add(e.record.id);}return doc;
+}
+function plan(doc){validate(doc);const current=new Map(api().localRecords().map(r=>[r.id,r]));return doc.entries.map(e=>{const r=current.get(e.record.id);let state,reason;
+ if(window.heraTripDeletion807.has(e.record.id)){state='held';reason='削除済み';}
+ else if(!r){state='held';reason='同じIDの釣行がありません（釣行は追加しません）';}
+ else if(!same(r,e.record)){state='held';reason='日付・釣り場・釣果・釣座の照合不一致';}
+ else if(diary(r)===e.diary){state='same';reason='同じ日記・変更なし';}
+ else if(!empty(r.diary)||!empty(r.comment)){state='held';reason='既存の日記があるため上書きしません';}
+ else if(localStorage.getItem(PREFIX+encodeURIComponent(r.id))!==null){state='held';reason='既存の補完データあり・上書きしません';}
+ else{state='add';reason='空の日記に追加可能';}
+ return {entry:e,record:r,state,reason};});}
+async function apply(doc){
+ if(!isHome())throw Error('追加はiPhoneのホーム画面アプリで行ってください。');
+ if(!navigator.locks?.request)throw Error('安全な追加に必要な排他制御が利用できません。');
+ if(api().pendingEntry()||api().identity?.busy)throw Error('入力・同期を終了してから実行してください。');
+ return navigator.locks.request('hera-trip-inbox-import807r3',{mode:'exclusive'},()=>{
+ const out={added:0,same:0,held:0,details:[]};
+ for(const x of plan(doc)){if(api().pendingEntry()||api().identity?.busy)throw Error('入力・同期が始まったため中止しました。再実行できます。');
+ if(x.state==='add'){const key=PREFIX+encodeURIComponent(x.record.id);if(localStorage.getItem(key)!==null){out.held++;continue;}try{localStorage.setItem(key,JSON.stringify({record:x.entry.record,baseline:stable(x.record),diary:x.entry.diary}));out.added++;}catch(e){throw Error('追加済み '+out.added+'件。保存できませんでした。既存記録は保持しています。再実行できます。');}}
+ else out[x.state==='same'?'same':'held']++;
+ out.details.push({date:x.entry.record.date,id:x.entry.record.id,result:x.reason});
+ }return out;});
+}
+window.heraSelectedDiary807r4={documentFor,validate,plan,apply};
+function mount(){const root=document.getElementById('settingsSimple807r4');if(!root)return;const box=document.createElement('details');box.className='card';box.innerHTML='<summary>選んだ日記だけをPCからiPhoneへ追加</summary><p>専用ファイル方式です。クラウドの一括同期は使いません。既存の日記・釣果・写真・地図は変更しません。</p><div data-pc><label>開始日<input type="date" data-from value="2026-10-14"></label><label>終了日<input type="date" data-to value="2026-10-15"></label><button type="button" data-list>日記を選ぶ</button><div data-choices></div><button type="button" data-export>選択した日記ファイルを作成</button><a data-download hidden>日記ファイルを保存</a><p>保存したファイルをAirDropなどでiPhoneの「ファイル」へ渡してください。</p></div><div data-phone><p>ホーム画面アプリで受け取った日記ファイルを選び、内容を確認してください。</p><input type="file" data-file><button type="button" data-apply disabled>確認した空の日記だけを追加</button></div><pre data-result style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>';root.append(box);
+const q=s=>box.querySelector(s),out=q('[data-result]');q('[data-pc]').hidden=api().phone();q('[data-phone]').hidden=!api().phone();let doc,url,busy=false;
+const status=s=>out.textContent=s;
+q('[data-list]').onclick=()=>{const dest=q('[data-choices]');dest.replaceChildren();for(const r of api().localRecords().filter(r=>r.date>=q('[data-from]').value&&r.date<=q('[data-to]').value&&typeof diary(r)==='string'&&diary(r).trim()&&!heraTripDeletion807.has(r.id))){const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.value=r.id;label.append(check,document.createTextNode(r.date+' '+r.place+' '+r.count+'枚\n'+diary(r)));label.style.whiteSpace='pre-wrap';dest.append(label);}status('送る日記にチェックしてください。同日複数記録もIDごとに選択します。');};
+q('[data-export]').onclick=()=>{try{const d=documentFor([...box.querySelectorAll('[data-choices] input:checked')].map(x=>x.value));validate(d);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));const a=q('[data-download]');a.href=url;a.download='へら日誌_選択日記_'+new Date().toISOString().slice(0,10)+'.json';a.hidden=false;status('作成完了：'+d.entries.length+'件。PCデータは変更していません。');}catch(e){status(e.message);}};
+q('[data-file]').onchange=async()=>{doc=null;q('[data-apply]').disabled=true;try{const f=q('[data-file]').files[0];if(!f)return;if(f.size>8*1024*1024)throw Error('日記ファイルが大きすぎます。対象を分けてください。');doc=validate(JSON.parse(await f.text()));status(plan(doc).map(x=>x.entry.record.date+' '+x.entry.record.place+' '+x.entry.record.count+'枚\n'+x.reason+'\n'+x.entry.diary).join('\n\n'));q('[data-apply]').disabled=!isHome();}catch(e){doc=null;status(e.message);}};
+q('[data-apply]').onclick=async()=>{if(busy||!doc)return;if(!confirm('照合できた空の日記だけを追加します。既存の日記は上書きしません。'))return;busy=true;q('[data-file]').disabled=true;q('[data-apply]').disabled=true;try{const r=await apply(doc);status('日記追加 '+r.added+'件／変更なし '+r.same+'件／保留 '+r.held+'件\n'+JSON.stringify(r.details,null,2)+'\n開き直して確認してください。');}catch(e){status(e.message);}finally{busy=false;q('[data-file]').disabled=false;q('[data-apply]').disabled=!isHome();}};
+}
+if(document.readyState==='complete')mount();else window.addEventListener('load',mount,{once:true});
+})();
+</script>
