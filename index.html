@@ -83202,6 +83202,18 @@ window.formatSyncResult807r4=function(text){
  async function deletionHistory(){const db=await openExisting('heraCloudState806');try{const out={};for(const k of await keys(db,'state'))if(typeof k==='string'&&k.startsWith('deletedPhotos:')){const v=await read(db,'state',k);if(!Array.isArray(v))throw Error('写真削除履歴が不正です。');out[k.slice(14)]=v;}return out;}finally{db?.close();}}
  function photoValid(p){if(!p||typeof p.key!=='string'||typeof p.recordId!=='string'||!Number.isInteger(p.order)||p.order<0||p.key!==p.recordId+':'+p.order||typeof p.data!=='string'||!p.data.startsWith('data:image/'))throw Error('写真形式を確認してください。変更は行いません。');}
  function frame(obj){let size=0;const check=v=>{if(typeof v==='string')size+=v.length;else if(v&&typeof v==='object')Object.values(v).forEach(check);if(size>MAX/3)throw Error('1件のサイズが大きすぎます。既存データは保持しています。');};check(obj);const bytes=enc.encode(JSON.stringify(obj));if(bytes.length>MAX)throw Error('1件のサイズが64MBを超えています。移行を中止します。');return bytes;}
+
+ const CHUNK=256*1024;
+ function equal(a,b){if(a===b)return true;if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const k=Object.keys(a);return k.length===Object.keys(b).length&&k.every(x=>Object.prototype.hasOwnProperty.call(b,x)&&equal(a[x],b[x]));}
+ async function packPhoto(row,parts){
+  photoValid(row);const metadata={},strings=[];
+  for(const [field,value]of Object.entries(row)){
+   if(typeof value!=='string'){Object.defineProperty(metadata,field,{value,enumerable:true});continue;}
+   const chunks=[];for(let i=0;i<value.length||i===0;i+=CHUNK){const bytes=enc.encode(JSON.stringify(value.slice(i,i+CHUNK)));chunks.push({length:bytes.length,sha256:await hash(bytes)});if(parts)parts.push(new Blob([bytes]));}
+   strings.push({field,chunks});
+  }
+  return {key:row.key,recordId:row.recordId,metadata,strings};
+ }
  let downloadURL;
  async function exportFile(progress){
   if(standalone())throw Error('書き出しは移行元のSafariで行ってください。');
@@ -83210,13 +83222,13 @@ window.formatSyncResult807r4=function(text){
   try{
    const beforeKeys=await keys(db,'photos');
    for(const key of beforeKeys){const p=await read(db,'photos',key);if(!p)throw Error('写真が変更されました。書き出し直してください。');if(!ids.has(p.recordId)||blocked(p.recordId,deletions)||(history[p.recordId]||[]).includes(p.photo_id))continue;
-    photoValid(p);const bytes=frame(p);photos.push({key:p.key,recordId:p.recordId,length:bytes.length,sha256:await hash(bytes)});parts.push(new Blob([bytes]));progress('写真を分割処理中：'+photos.length+'枚');
+    photos.push(await packPhoto(p,parts));progress('写真を分割処理中：'+photos.length+'枚');
    }
    // Detect source edits during export; never change the source to stabilize it.
    if(stable(beforeKeys)!==stable(await keys(db,'photos')))throw Error('写真が変更されました。書き出し直してください。');
-   for(const p of photos)if(await hash(frame(await read(db,'photos',p.key)))!==p.sha256)throw Error('写真が変更されました。書き出し直してください。');
+   for(const p of photos)if(stable(await packPhoto(await read(db,'photos',p.key)))!==stable(p))throw Error('写真が変更されました。書き出し直してください。');
    if(signature!==stable([trips(),tomb(),await deletionHistory()]))throw Error('釣行データが変更されました。書き出し直してください。');
-   const manifest=frame({format:'hera-additive-transfer',version:1,records,deletions,photoDeleted:history,photos});
+   const manifest=frame({format:'hera-additive-transfer',version:2,records,deletions,photoDeleted:history,photos});
    const prefix=MAGIC+String(manifest.length).padStart(10,'0')+'\n';
    const file=new Blob([prefix,manifest,...parts],{type:'application/octet-stream'});
    if(downloadURL)URL.revokeObjectURL(downloadURL);downloadURL=URL.createObjectURL(file);
@@ -83228,17 +83240,33 @@ window.formatSyncResult807r4=function(text){
   if(!prefix.startsWith(MAGIC)||!/^\d{10}\n$/.test(prefix.slice(MAGIC.length)))throw Error('移行専用ファイルを選択してください。');
   const n=Number(prefix.slice(MAGIC.length, -1));if(n>MAX)throw Error('目録が大きすぎます。');
   const m=JSON.parse(await file.slice(prefix.length,prefix.length+n).text());
-  if(m.format!=='hera-additive-transfer'||m.version!==1||!Array.isArray(m.records)||!Array.isArray(m.photos)||!m.photoDeleted||typeof m.photoDeleted!=='object')throw Error('移行形式が不正です。');
+  if(m.format!=='hera-additive-transfer'||![1,2].includes(m.version)||!Array.isArray(m.records)||!Array.isArray(m.photos)||!m.photoDeleted||typeof m.photoDeleted!=='object')throw Error('移行形式が不正です。');
   m.deletions=window.heraTripDeletion807.validate(m.deletions);
   for(const v of Object.values(m.photoDeleted))if(!Array.isArray(v)||v.some(x=>typeof x!=='string'))throw Error('写真削除履歴が不正です。');
   const ids=new Set();for(const r of m.records){if(!validTrip806(r)||ids.has(r.id))throw Error('釣行IDが不正または重複しています。');ids.add(r.id);}
   let offset=prefix.length+n;const seen=new Set();
-  for(const p of m.photos){if(!Number.isSafeInteger(p.length)||p.length<1||p.length>MAX||seen.has(p.key)||!ids.has(p.recordId))throw Error('写真目録が不正です。');seen.add(p.key);p.offset=offset;offset+=p.length;if(offset>file.size)throw Error('ファイルが途中で切れています。');await photoFrom(file,p);progress('ファイル検証：'+seen.size+' / '+m.photos.length+'枚');}
+  for(const p of m.photos){
+   if(seen.has(p.key)||!ids.has(p.recordId))throw Error('写真目録が不正です。');seen.add(p.key);
+   if(m.version===2){
+    if(!p.metadata||typeof p.metadata!=='object'||Array.isArray(p.metadata)||!Array.isArray(p.strings))throw Error('写真目録が不正です。');
+    const fields=new Set(Object.keys(p.metadata));
+    for(const entry of p.strings){if(typeof entry.field!=='string'||fields.has(entry.field)||!Array.isArray(entry.chunks)||!entry.chunks.length)throw Error('写真分割目録が不正です。');fields.add(entry.field);
+     for(const c of entry.chunks){if(!Number.isSafeInteger(c.length)||c.length<2||c.length>CHUNK*6+2||typeof c.sha256!=='string')throw Error('写真分割サイズが不正です。');c.offset=offset;offset+=c.length;if(!Number.isSafeInteger(offset)||offset>file.size)throw Error('ファイルが途中で切れています。');}
+    }
+   }else{if(!Number.isSafeInteger(p.length)||p.length<1||p.length>MAX)throw Error('写真目録が不正です。');p.offset=offset;offset+=p.length;if(offset>file.size)throw Error('ファイルが途中で切れています。');}
+   await photoFrom(file,p);progress('ファイル検証：'+seen.size+' / '+m.photos.length+'枚');
+  }
   if(offset!==file.size)throw Error('ファイルサイズが一致しません。');return m;
  }
- async function photoFrom(file,p){const bytes=await file.slice(p.offset,p.offset+p.length).arrayBuffer();if(await hash(bytes)!==p.sha256)throw Error('写真のハッシュが一致しません。');const row=JSON.parse(new TextDecoder().decode(bytes));photoValid(row);if(row.key!==p.key||row.recordId!==p.recordId)throw Error('写真の紐付けが一致しません。');return row;}
+ async function photoFrom(file,p){
+  async function decode(c){const bytes=await file.slice(c.offset,c.offset+c.length).arrayBuffer();if(await hash(bytes)!==c.sha256)throw Error('写真のハッシュが一致しません。');return JSON.parse(new TextDecoder().decode(bytes));}
+  let row;
+  if(p.strings){row={...p.metadata};for(const e of p.strings){const values=[];for(const c of e.chunks){const v=await decode(c);if(typeof v!=='string'||v.length>CHUNK)throw Error('写真分割データが不正です。');values.push(v);}Object.defineProperty(row,e.field,{value:values.join(''),enumerable:true,writable:true,configurable:true});}}
+  else row=await decode(p);
+  photoValid(row);if(row.key!==p.key||row.recordId!==p.recordId)throw Error('写真の紐付けが一致しません。');return row;
+ }
  function classify(records,existing,deletions,incoming){const map=new Map(existing.map(r=>[r.id,r]));return records.map(r=>({r,state:blocked(r.id,deletions)||blocked(r.id,incoming)?'deleted':map.has(r.id)?stable(r)===stable(map.get(r.id))?'same':'conflict':'add'}));}
- async function addPhoto(db,row){return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite'),s=tx.objectStore('photos');let result='same';const q=s.get(row.key);q.onsuccess=()=>{if(q.result){result=stable(q.result)===stable(row)?'same':'conflict';return;}const scan=s.openCursor();scan.onsuccess=()=>{const c=scan.result;if(!c){s.add(row);result='add';return;}if(c.value.recordId===row.recordId&&row.photo_id&&c.value.photo_id===row.photo_id){result='conflict';return;}c.continue();};};tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('写真追加中止'));});}
+ async function addPhoto(db,row){return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite'),s=tx.objectStore('photos');let result='same';const q=s.get(row.key);q.onsuccess=()=>{if(q.result){result=equal(q.result,row)?'same':'conflict';return;}const scan=s.openCursor();scan.onsuccess=()=>{const c=scan.result;if(!c){s.add(row);result='add';return;}if(c.value.recordId===row.recordId&&row.photo_id&&c.value.photo_id===row.photo_id){result='conflict';return;}c.continue();};};tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('写真追加中止'));});}
  async function importFile(file,m,progress){
   if(!standalone())throw Error('追加取り込みはホーム画面アプリ版で行ってください。Safariは変更しません。');
   if(!navigator.locks?.request)throw Error('安全な追加に必要な排他制御が利用できません。');
