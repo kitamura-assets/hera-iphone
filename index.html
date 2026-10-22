@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.808',revision:4,build:"2026/10/20 開発版",get label(){return 'Ver.'+this.version+'-r'+this.revision;}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:3,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -83536,4 +83536,119 @@ color:transparent!important;-webkit-text-fill-color:transparent!important;text-s
 background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%237eaf83'/%3E%3Cstop offset='1' stop-color='%23265f48'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='20' cy='20' r='18.5' fill='url(%23g)' stroke='%23aacba3'/%3E%3Cpath d='M20 10V30M10 20H30' stroke='%23fffdef' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center/36px 36px no-repeat!important;
 }
 @media(max-width:359px){#iphoneHomeB619 #ih619Status:not(.is-running) #ih619MainBtn::first-letter{background-size:30px 30px!important;}}
+</style>
+
+<style id="design809">/* 809: presentation only, scoped to home status and entry form. */
+@media(min-width:410px) and (max-width:500px){
+#iphoneHomeB619 #ih619Status .ih619-status-top{column-gap:4px!important;}
+#iphoneHomeB619 #ih619Status #ih619StateText{font-size:20px!important;letter-spacing:-.025em!important;white-space:nowrap!important;word-break:keep-all!important;}
+}
+#iphoneHomeB619 #ih619Status:not(.is-running) #ih619MainBtn::first-letter{padding:5px 11px 5px 5px!important;background-position:left center!important;}
+/* Entry-only palette. Semantic danger/invalid states are retained below. */
+#entry#entry#entry{--green809:#064735;--mid809:#225f49;--line809:#a7c2af;--pale809:#eff6ef;}
+#entry#entry#entry .entry-shell,#entry#entry#entry .entry-form{background:#f6f9f3!important;border-color:var(--line809)!important;}
+#entry#entry#entry :is(.entry-section,.segment,.entry-fields,.entry-total-chip,.count-input-wrap,.photo-drop){border-color:var(--line809)!important;background-color:#fcfef9!important;box-shadow:0 3px 10px #183f2810!important;}
+#entry#entry#entry :is(.entry-section-head,.segment-head,.entry-basic-head,.entry-fishing-head,.entry-status-head,.entry-diary-head){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#739d83!important;}
+#entry#entry#entry :is(.entry-section-head,.segment-head) :is(h2,h3,small,.entry-basic-sub,.entry-fishing-sub,.entry-status-sub,.entry-diary-sub){color:#fffdf1!important;}
+#entry#entry#entry :is(h1,.entry-fields>label>span,.entry-section-no){color:#174b37!important;}
+#entry#entry#entry :is(input:not([type=checkbox]):not([type=radio]),select,textarea,.time-display){background:#fffefa!important;color:#20382c!important;border-color:#a7c2af!important;box-shadow:none!important;}
+#entry#entry#entry button:not(.danger):not([class*=delete]):not([class*=remove]):not([class*=minus]){background:linear-gradient(140deg,#f6faf2,#e4eee2)!important;color:#174b37!important;border-color:#8eb099!important;box-shadow:0 2px 5px #234d2e15!important;}
+#entry#entry#entry :is(button.primary,button[type=submit],.entry-actions button:not(.secondary),button.active,button.selected,button[aria-pressed=true]){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#719e81!important;}
+#entry#entry#entry :is(button:disabled,input:disabled,select:disabled){opacity:.5!important;cursor:not-allowed!important;}
+#entry#entry#entry :is(input,select,textarea):focus-visible{outline:2px solid #3b805b!important;outline-offset:2px;}
+#entry#entry#entry [aria-invalid=true]{border-color:#ad4234!important;box-shadow:0 0 0 1px #ad4234!important;}
+/* Legacy inline !important backgrounds are covered by a static inset, without changing their scripts. */
+#entry#entry#entry .entry-section-head{box-shadow:inset 0 0 0 200px #174f3b!important;}
+#entry#entry#entry .entry-actions{background:#f0f6ed!important;border-color:#a7c2af!important;}
+#entry#entry#entry :is(.tana-range,.depth-range,.entry-section-no,.segment-title,.seg-title){border-color:#a7c2af!important;color:#174b37!important;background-color:#eef5e9!important;}
+#entry#entry#entry :is(#basicHomeBtnV11730,#step4HomeBtnV11727){background:#225f49!important;color:#fffdf1!important;}
+#entry#entry#entry :is(#liveFishingStartV530,button.primary){box-shadow:inset 0 0 0 100px #225f49!important;color:#fffdf1!important;}
+#iphoneHomeB619 #ih619Status:not(.is-running) #ih619MainBtn::first-letter{background-position:left calc(50% + 2px)!important;}
+</style>
+
+<style id="workflow809r1">/* Fishing workflow only. No sizing, visibility, storage or event changes. */
+#iphoneLiveV515#iphoneLiveV515{background:#f6f9f3!important;color:#20382c!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-body,.lv515-dialog){background:#f6f9f3!important;border-color:#a7c2af!important;color:#20382c!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-head,.lv515-card-head){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#739d83!important;box-shadow:none!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-head,.lv515-card-head) :is(b,.lv515-card-title){color:#fffdf1!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-card,.lv515-summary,.lv515-current,.lv515-next-guide,.lv515-change-summary,.lv515-change-result,.lv515-change-detailbox,.lv515-finish-timebox,.lv515-finish-timeitem,.lv515-fishing-history-row,.lv515-finish-toast){background:linear-gradient(135deg,#fcfef9,#eff6ef)!important;border-color:#a7c2af!important;color:#20382c!important;box-shadow:0 3px 10px #183f2810!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-step,.lv515-next-arrow,.lv515-fishing-history-no){background:#e4eee2!important;color:#174b37!important;border-color:#8eb099!important;box-shadow:none!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-card-title,.lv515-dialog-title,.lv515-count,.lv515-count small,.lv515-count-label,.lv515-note,.lv515-status,.lv515-next-guide-copy,.lv515-next-guide-copy b,.lv515-next-guide-copy strong,.lv515-next-sub,.lv515-date,.lv515-summary b,.lv515-summary strong,.lv515-current strong,.lv515-current span,.lv515-finish-timeitem span,.lv515-finish-timeitem b){color:#174b37!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-soft,.lv515-head button){background:linear-gradient(140deg,#f6faf2,#e4eee2)!important;color:#174b37!important;border-color:#8eb099!important;box-shadow:0 2px 5px #234d2e15!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-primary,.lv515-start,.lv515-plus,.lv515-gold,.lv515-ryanko,#lv515Step2Card>.lv515-btn){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#719e81!important;box-shadow:0 3px 8px #183f2820!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-card,.lv515-next-guide)::before{background:#8eb099!important;border-color:#8eb099!important;}
+#iphoneLiveV515#iphoneLiveV515 button:disabled{opacity:.5!important;}
+:is(#entryConfirmV581,#entryConfirmPreviewV618):is(#entryConfirmV581,#entryConfirmPreviewV618) :is(.ec581-shell,.ec618-shell,.ec581-body,.ec618-body,.ec581-foot,.ec618-foot,.ec581-card,.ec618-card,.ec581-hero,.ec618-hero,.ec581-diary,.ec618-diary,.ec581-seg,.ec618-seg){background:#f6f9f3!important;color:#20382c!important;border-color:#a7c2af!important;box-shadow:0 3px 10px #183f2810!important;}
+:is(#entryConfirmV581,#entryConfirmPreviewV618):is(#entryConfirmV581,#entryConfirmPreviewV618) :is(.ec581-head,.ec618-head,.ec581-save,.ec618-save){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#719e81!important;}
+:is(#entryConfirmV581,#entryConfirmPreviewV618):is(#entryConfirmV581,#entryConfirmPreviewV618) :is(.ec581-card-title,.ec618-card-title,.ec581-place,.ec618-place,.ec581-date,.ec618-date,.ec581-total,.ec618-total,.ec581-item b,.ec618-item b,.ec581-seg-head,.ec618-seg-head){color:#174b37!important;border-color:#a7c2af!important;}
+:is(#entryConfirmV581,#entryConfirmPreviewV618):is(#entryConfirmV581,#entryConfirmPreviewV618) :is(.ec581-back,.ec618-back,.ec581-close,.ec618-close,.ec581-chip,.ec618-chip){background:#e4eee2!important;color:#174b37!important;border-color:#8eb099!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.lv515-current-result,.lv515-note,.lv515-current-start){background:#eff6ef!important;border-color:#a7c2af!important;color:#174b37!important;box-shadow:none!important;}
+#iphoneLiveV515#iphoneLiveV515 #lv515BasicSummary{--v11726-icon-brown:#225f49!important;}
+#iphoneLiveV515#iphoneLiveV515 #lv515BasicSummary :is(.v725-calendar,.v725-pond,.v725-seat){--v11726-icon-brown:#225f49!important;color:#225f49!important;-webkit-text-fill-color:#225f49!important;}
+#iphoneLiveV515#iphoneLiveV515 #lv515BackMainV624{background:#225f49!important;color:#fffdf1!important;}
+:is(#entryConfirmV581,#entryConfirmPreviewV618):is(#entryConfirmV581,#entryConfirmPreviewV618) :is(.ec581-card-title,.ec618-card-title){background:#174f3b!important;color:#fffdf1!important;}
+#iphoneLiveV515#iphoneLiveV515 :is(.v599-fishing-count,.v587-basic-meta-item,.lv515-current-result-count,.lv515-current-result-label,.lv515-current-result-unit){color:#174b37!important;border-color:#a7c2af!important;}
+#v587SaveFinishOverlay#v587SaveFinishOverlay .v587-finish-card{background:linear-gradient(140deg,#fcfef9,#eff6ef)!important;border-color:#8eb099!important;box-shadow:0 12px 35px #153e2833!important;color:#174b37!important;}
+#v587SaveFinishOverlay#v587SaveFinishOverlay :is(.v587-save-title,.v587-save-sub,.v587-thanks,.v587-thanks strong,.v587-note){color:#174b37!important;}
+#v587SaveFinishOverlay#v587SaveFinishOverlay :is(.v587-emblem,.v587-close-btn){background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#719e81!important;box-shadow:0 3px 8px #183f2820!important;}
+#v587SaveFinishOverlay#v587SaveFinishOverlay{background:rgba(8,35,25,.82)!important;}
+#v587SaveFinishOverlay#v587SaveFinishOverlay .v587-thanks{border-color:#a7c2af!important;}
+#iphoneLiveV515#iphoneLiveV515 .lv515-overlay{background:rgba(8,35,25,.55)!important;}
+</style>
+
+<style id="shared809r2">/* The existing home card is also the resume view. The legacy node remains a data/command adapter. */
+#iphoneHomeB619 #resumeTrip806{display:none!important;}
+#iphoneHomeB619.has-resume806 #ih619Status{display:block!important;}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619Place{white-space:normal!important;overflow-wrap:anywhere;}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn::first-letter{background:none!important;padding:0!important;color:inherit!important;-webkit-text-fill-color:currentColor!important;font-size:inherit!important;}
+</style>
+<script id="shared809r2-script">/* Presentation bridge only: reuse existing computed values and original resume click handler. */
+(()=>{
+ const home=document.getElementById('iphoneHomeB619'),card=document.getElementById('ih619Status');if(!home||!card)return;
+ const ids=['ih619StateText','ih619Place','ih619Elapsed','ih619Count','ih619Start','ih619MainBtn'];
+ let nodes=ids.map(id=>document.getElementById(id)),labels=[...card.querySelectorAll('.ih619-metric>span')];
+ let snapshot=null;
+ const put=(node,text)=>{if(node&&node.textContent!==text)node.textContent=text;};
+ function decorateButton(){
+  const button=document.getElementById('ih619MainBtn');if(!button)return;
+  const raw=button.textContent,back=card.classList.contains('resume-shared809'),prefix=back?'':(raw.match(/^[＋+]\s*/)||[''])[0];
+  if(button.querySelector('.home-action-icon809')&&button.dataset.iconMode809===(back?'back':'plus'))return;
+  const hidden=document.createElement('span');hidden.hidden=true;hidden.textContent=prefix;
+  const icon=document.createElement('span');icon.className='home-action-icon809';icon.setAttribute('aria-hidden','true');
+  icon.innerHTML='<svg viewBox="0 0 40 40"><path d="'+(back?'M28 20H12M19 13L12 20L19 27':'M20 10V30M10 20H30')+'"/></svg>';
+  const label=document.createElement('span');label.className='home-action-label809';label.textContent=prefix?raw.slice(prefix.length):raw;
+  button.replaceChildren(hidden,icon,label);button.dataset.iconMode809=back?'back':'plus';
+ }
+ function render(){
+  nodes=ids.map(id=>document.getElementById(id));
+  const source=document.getElementById('resumeTrip806'),active=home.classList.contains('has-resume806')&&source&&!source.hidden;
+  if(active){
+   if(!snapshot)snapshot=[...nodes,...labels].map(n=>n?.textContent||'');
+   if(!card.classList.contains('resume-shared809'))card.classList.add('resume-shared809');
+   put(nodes[0],'現在 釣行中');put(nodes[1],source.querySelector('.resume-place806')?.textContent||'釣行中');
+   put(nodes[2],source.querySelector('[data-resume=duration]')?.textContent||'ー');
+   put(nodes[3],(source.querySelector('[data-resume=count]')?.textContent||'ー').replace(/枚\s*$/,''));
+   put(nodes[4],source.querySelector('[data-resume=end]')?.textContent||'ー');put(nodes[5],'釣行記録へ戻る');
+   ['釣行時間','釣果','終了時刻'].forEach((s,i)=>put(labels[i],s));
+  }else if(snapshot){card.classList.remove('resume-shared809');[...nodes,...labels].forEach((n,i)=>put(n,snapshot[i]));snapshot=null;}
+  decorateButton();
+ }
+ home.addEventListener('click',event=>{if(event.target.closest?.('#ih619MainBtn')&&home.classList.contains('has-resume806')){event.preventDefault();event.stopImmediatePropagation();document.querySelector('#resumeTrip806 button')?.click();}},true);
+ const Observer=window.heraPower807?.UIObserver||MutationObserver;
+ const observer=new Observer(render);observer.observe(home,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','hidden']});render();
+})();
+</script>
+<style id="design809r3">/* One icon element and one symbol, shared by idle and resume actions. */
+#iphoneHomeB619 #ih619Status #ih619MainBtn{display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;}
+#iphoneHomeB619 #ih619Status #ih619MainBtn::first-letter{background:none!important;border:0!important;padding:0!important;box-shadow:none!important;font-size:inherit!important;color:inherit!important;-webkit-text-fill-color:currentColor!important;}
+#iphoneHomeB619 #ih619Status .home-action-icon809{display:flex!important;align-items:center;justify-content:center;flex:0 0 36px;width:36px;height:36px;box-sizing:border-box;border:1px solid #aacba3;border-radius:50%;background:linear-gradient(#7eaf83,#265f48);box-shadow:inset 0 1px 2px #e0f2ce55,0 2px 3px #012b2d55;}
+#iphoneHomeB619 #ih619Status .home-action-icon809 svg{display:block;width:100%;height:100%;fill:none;stroke:#fffdef;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+#iphoneHomeB619 #ih619Status .home-action-label809{min-width:0;line-height:1.5;}
+#iphoneHomeB619 #ih619Status .ih619-status-top{grid-template-rows:52px 42px!important;align-content:center!important;}
+#iphoneHomeB619 #ih619Status #ih619StateText{align-self:end!important;}
+#iphoneHomeB619 #ih619Status #ih619Place{align-self:start!important;white-space:normal!important;overflow-wrap:anywhere;}
+@media(max-width:409px){#iphoneHomeB619 #ih619Status .ih619-status-top{grid-template-rows:64px minmax(38px,auto)!important;}}
+@media(max-width:359px){#iphoneHomeB619 #ih619Status .home-action-icon809{flex-basis:30px;width:30px;height:30px;}#iphoneHomeB619 #ih619Status #ih619MainBtn{gap:8px!important;}}
+#iphoneHomeB619 #ih619Status #ih619MainBtn{display:grid!important;grid-template-columns:36px minmax(0,1fr)!important;padding-left:clamp(14px,12vw,52px)!important;text-align:center!important;}
+@media(max-width:359px){#iphoneHomeB619 #ih619Status #ih619MainBtn{grid-template-columns:30px minmax(0,1fr)!important;padding-left:14px!important;}}
 </style>
