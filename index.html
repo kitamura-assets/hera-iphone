@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:3,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:4,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -53382,7 +53382,7 @@ html.iphone-entry-v001 #entry #saveMsg{grid-column:1/-1!important;white-space:no
       imp(el,'display','block'); imp(el,'width','100%'); imp(el,'max-width','100%'); imp(el,'min-width','0'); imp(el,'box-sizing','border-box');
     });
     var dateInput=root.querySelector('.entry-basic-card .date-field input');
-    if(dateInput){ imp(dateInput,'width','100%'); imp(dateInput,'max-width','100%'); imp(dateInput,'min-width','0'); imp(dateInput,'display','block'); imp(dateInput,'padding-left','46px'); imp(dateInput,'padding-right','16px'); }
+    if(dateInput){ imp(dateInput,'width','100%'); imp(dateInput,'max-width','100%'); imp(dateInput,'min-width','0'); imp(dateInput,'display','block'); imp(dateInput,'padding-left','16px'); imp(dateInput,'padding-right','16px'); }
     root.querySelectorAll('.entry-basic-card .quick.time-row').forEach(function(row){
       imp(row,'display','grid'); imp(row,'grid-template-columns','minmax(0,1fr) 78px'); imp(row,'gap','7px');
       var picker=row.querySelector('.time-picker'); if(picker){ imp(picker,'width','100%'); imp(picker,'min-width','0'); }
@@ -83651,4 +83651,37 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 @media(max-width:359px){#iphoneHomeB619 #ih619Status .home-action-icon809{flex-basis:30px;width:30px;height:30px;}#iphoneHomeB619 #ih619Status #ih619MainBtn{gap:8px!important;}}
 #iphoneHomeB619 #ih619Status #ih619MainBtn{display:grid!important;grid-template-columns:36px minmax(0,1fr)!important;padding-left:clamp(14px,12vw,52px)!important;text-align:center!important;}
 @media(max-width:359px){#iphoneHomeB619 #ih619Status #ih619MainBtn{grid-template-columns:30px minmax(0,1fr)!important;padding-left:14px!important;}}
+</style>
+<style id="design809r4">/* 809-r4: presentation only; running button uses symmetric side slots. */
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619StateText{font-size:22px!important;}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619Place{font-size:15px!important;}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn{display:flex!important;position:relative!important;padding-left:58px!important;padding-right:58px!important;justify-content:center!important;gap:0!important;}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn .home-action-icon809{position:absolute;left:12px;top:50%;transform:translateY(-50%);}
+#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn::after{right:12px!important;width:36px;text-align:center;}
+@media(max-width:359px){#iphoneHomeB619 #ih619Status.resume-shared809 #ih619StateText{font-size:20px!important;}#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn{padding-left:46px!important;padding-right:46px!important;}#iphoneHomeB619 #ih619Status.resume-shared809 #ih619MainBtn::after{width:30px;}}
+#entry#entry#entry :is(.entry-section,.entry-fields,.entry-fields-status,.entry-segment,.count-wrap,.photo-drop,.entry-diary-card,.entry-status-card){background:#fff!important;border-color:#a7c2af!important;}
+#entry#entry#entry :is(input,select,textarea,.time-display){background:#fff!important;}
+#entry#entry#entry :is(#basicHomeBtnV11730,#step4HomeBtnV11727){background:#174f3b!important;box-shadow:none!important;border-color:#174f3b!important;}
+#entry#entry#entry :is(#basicHomeBtnV11730,#step4HomeBtnV11727) svg{width:26px!important;height:26px!important;}
+#entry#entry#entry .map-pick-btn{display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;background:linear-gradient(#32785b,#064735)!important;color:#fffdf1!important;border:1px solid #43836a!important;box-shadow:inset 0 1px 1px #ffffff55,0 3px 5px #153d352b!important;}
+#entry#entry#entry input[name=date]{text-align:left!important;padding-left:12px!important;}
+#entry#entry#entry input[name=date]::-webkit-date-and-time-value{text-align:left!important;}
+#entry#entry#entry .hourly806{background:#fff!important;color:#20382c!important;border-color:#a7c2af!important;}
+#entry#entry#entry .hourly806 thead th{background:#174f3b!important;color:#fffdf1!important;-webkit-text-fill-color:#fffdf1!important;border-color:#a7c2af!important;}
+#entry#entry#entry .hourly806 :is(td,th){border-color:#a7c2af!important;}
+#entry#entry#entry :is(#catchAnalysisBoxV11660,#activityCalcDetailV11736,.auto-judged-v11790,.v11720-auto-note){background:#fff!important;color:#225f49!important;border-color:#a7c2af!important;}
+#entry#entry#entry :is(.auto-judged-v11790 > span:first-child,.auto-badge-v11790){color:#225f49!important;border-color:#a7c2af!important;}
+#optionalSave806 .optional-dialog806{background:#fff;color:#20382c;border:1px solid #a7c2af;}
+#optionalSave806 #optionalTitle806{background:#174f3b!important;}
+#optionalSave806 .optional-actions806{background:#fff;}
+#optionalSave806 .optional-actions806 button{border-color:#a7c2af;color:#225f49;background:#f3f8f2;}
+#optionalSave806 .optional-actions806 [data-optional=save]{background:linear-gradient(#32785b,#064735);}
+/* Override legacy high-specificity presentation rules without changing their scripts. */
+#entry#entry#entry#entry#entry#entry .map-pick-btn{background:linear-gradient(#32785b,#064735)!important;color:#fffdf1!important;-webkit-text-fill-color:#fffdf1!important;}
+#entry#entry#entry#entry#entry#entry :is(input,select,textarea,.size-combo-v11696,.entry-actions){background:#fff!important;border-color:#a7c2af!important;}
+#entry#entry#entry#entry#entry#entry :is(.entry-diary-card label,.entry-diary-card .photo-label,#step4BackStep3V11727,.size-combo-toggle-v11696){color:#225f49!important;border-color:#a7c2af!important;}
+#entry#entry#entry#entry#entry#entry :is(#catchAnalysisBoxV11660,#activityCalcDetailV11736,.auto-judged-v11790,.v11720-auto-note){background:#fff!important;color:#225f49!important;border-color:#a7c2af!important;}
+#entry#entry#entry#entry#entry#entry #activityCalcDetailV11736 :is(.v11736-title,.v11736-line,.v11736-result){color:#225f49!important;}
+#entry#entry#entry#entry#entry#entry .entry-summary{background:#fff!important;border-color:#a7c2af!important;}
+#entry#entry#entry#entry#entry#entry :is(#step4BackStep3V11727,.entry-diary-card label,.entry-diary-card .field-label){-webkit-text-fill-color:#225f49!important;}
 </style>
