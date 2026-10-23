@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:4,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:5,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -82229,9 +82229,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){message(e.name==='AbortError'?'写真通信を停止しました。次回ボタンで再試行してください。':'エラー：'+e.message);throw e;}finally{batch=null;controls();const valid=new Set(api.localRecords().map(r=>r.id));let count=0;for(const [rid,keys] of await heraPhotoMemory806.inventory())if(valid.has(rid))count+=keys.length;$('photo806Counts').textContent='端末内の釣行写真：'+count+'枚。未同期数・容量は「写真状況を確認」で確認できます。';}});}
   async function upload(){
     if(!api.phone()||api.identity.role!=='reader')throw Error('写真送信はiPhone読取用アカウントで実行してください。');
+    message('写真を確認しています。枚数・容量の確認後に送信確認を表示します。まだクラウドへ送信していません。');
     checkNetwork();const uid=api.identity.uid,photos=await scan(),receipts=await stateGet('up:'+uid);
     const bytes=photos.filter(p=>!receipts[p.meta.photo_id]?.uploaded).reduce((n,p)=>n+p.blob.size,0);
-    if(!confirm('自宅Wi-Fiに接続していますか？\n写真 '+photos.length+'枚を確認し、未送信分だけを送ります（最大約'+(bytes/1048576).toFixed(2)+'MB）。\n通信種別は確実には判定できません。続けますか？'))return;
+    if(!confirm('自宅Wi-Fiに接続していますか？\n写真 '+photos.length+'枚を確認し、未送信分だけを送ります（最大約'+(bytes/1048576).toFixed(2)+'MB）。\n通信種別は確実には判定できません。続けますか？')){message('写真送信をキャンセルしました。端末内の写真は変更していません。');return;}
     checkBatch();const remote=await manifest(),remoteMap=new Map(remote.map(m=>[m.photo_id,m]));
     const groups=new Map();for(const p of photos){if(!groups.has(p.meta.record_id))groups.set(p.meta.record_id,[]);groups.get(p.meta.record_id).push(p);}
     // Include records whose local photos were all deleted, to retire metadata only.
@@ -83158,7 +83159,7 @@ window.formatSyncResult807r4=function(text){
  if(phone)action(more,'photo806Download','必要な写真を取得');
  action(more,phone?'placePull807':'placePush807',phone?'PCの釣り場マップを取得':'PCの釣り場マップを反映');mirror(more,'placeStatus807');
  // Photo cancellation must remain available during any manual transfer.
- const photoStatus=document.createElement('div');photoStatus.className='settings-photo-status-r4';main.append(photoStatus);
+ const photoStatus=document.createElement('div');photoStatus.className='settings-photo-status-r4';receive.append(photoStatus);
  mirror(photoStatus,'photo806Status');action(photoStatus,'photo806Stop','写真通信を停止');
  const backup=group('④ バックアップ・復元','同期とは別の操作です。復元は現在のデータを変更します。写真を含む大容量JSONには既存の容量制限があります。',true);
  for(const selector of ['.settings-card-backup','.settings-card-restore']){const el=root.querySelector(selector);if(el)backup.append(el);}
@@ -83684,4 +83685,18 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 #entry#entry#entry#entry#entry#entry #activityCalcDetailV11736 :is(.v11736-title,.v11736-line,.v11736-result){color:#225f49!important;}
 #entry#entry#entry#entry#entry#entry .entry-summary{background:#fff!important;border-color:#a7c2af!important;}
 #entry#entry#entry#entry#entry#entry :is(#step4BackStep3V11727,.entry-diary-card label,.entry-diary-card .field-label){-webkit-text-fill-color:#225f49!important;}
+</style>
+<style id="design809r5">#entry#entry#entry#entry#entry#entry .tana-range,#entry#entry#entry#entry#entry#entry .tana-range :is(input,span){background:#fff!important;background-image:none!important;}
+/* State-specific workflow rules outrank the original step-ready theme. */
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 :is(#lv515Step3Card,#lv515Step4Card){background:#fff!important;border-color:#a7c2af!important;box-shadow:0 3px 12px #183f2820!important;}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 :is(#lv515Step3Card,#lv515Step4Card) .lv515-card-head{background:linear-gradient(135deg,#225f49,#064735)!important;border-color:#739d83!important;color:#fffdf1!important;}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 :is(#lv515Step3Card,#lv515Step4Card) .lv515-step{background:#e4eee2!important;color:#174b37!important;border-color:#8eb099!important;}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 :is(#lv515Step3Card,#lv515Step4Card) .lv515-next-guide{background:linear-gradient(#f6faf2,#e4eee2)!important;border-color:#a7c2af!important;box-shadow:0 3px 8px #183f2815!important;}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 :is(#lv515Step3Card,#lv515Step4Card) .lv515-review-button{background:linear-gradient(135deg,#225f49,#064735)!important;color:#fffdf1!important;border-color:#719e81!important;box-shadow:inset 0 1px 0 #ffffff55,0 4px 10px #183f2820!important;}
+#settingsSimple807r4 .settings-photo-status-r4{margin-top:8px;}
+#settingsSimple807r4 .settings-photo-status-r4 [role=status]:not(:empty){padding:10px;border:1px solid #a7c2af;border-radius:10px;background:#f4f8f2;white-space:pre-wrap;}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 #lv515Step3Card :is(.lv515-review-summary-v585,.v585-review-grid,.v585-review-empty){background:#fff!important;border-color:#a7c2af!important;color:#174b37!important;}
+/* Keep the shared field border; suppress focus-only rings inside tana inputs. */
+#entry#entry#entry#entry#entry#entry .tana-range:focus-within{outline:none!important;box-shadow:none!important;border-color:#a7c2af!important;}
+#entry#entry#entry#entry#entry#entry .tana-range input:is(:focus,:focus-visible),#entry#entry#entry#entry#entry#entry .tana-part:focus-within{outline:none!important;box-shadow:none!important;border-color:transparent!important;}
 </style>
