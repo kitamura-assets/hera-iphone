@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:5,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:6,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -83700,3 +83700,40 @@ background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 #entry#entry#entry#entry#entry#entry .tana-range:focus-within{outline:none!important;box-shadow:none!important;border-color:#a7c2af!important;}
 #entry#entry#entry#entry#entry#entry .tana-range input:is(:focus,:focus-visible),#entry#entry#entry#entry#entry#entry .tana-part:focus-within{outline:none!important;box-shadow:none!important;border-color:transparent!important;}
 </style>
+<style id="results809r6-style">#settingsSimple807r4 .sync-result809r6{flex-basis:100%;white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 16px;padding:12px;border:1px solid #a7c2af;border-radius:12px;background:#f4f8f2;color:#174b37;}#settingsSimple807r4 .sync-result809r6[data-state=error]{background:#fff2ef;color:#8d3025;border-color:#d8aaa2;}#settingsSimple807r4 .sync-result809r6[data-state=busy]{background:#fff9e9;color:#594720;}</style>
+<script id="results809r6-script">/* Result presentation only: retain original onclick, confirmations, requests and storage. */
+(()=>{
+'use strict';
+const specs=[['sb806Upload','sb806Status','釣行記録・日記',true],['sb806Download','sb806Status','釣行記録・日記',false],['rodPush807','rodSyncStatus807','竿情報',true],['rodPull807','rodSyncStatus807','竿情報',false]];
+function cause(s){
+ const http=s.match(/HTTP\s*(\d{3})/i);if(http)return '通信エラー（HTTP '+http[1]+'）。接続設定を確認してください。';
+ if(/ログイン|認証|アカウント|token|jwt|unauthorized/i.test(s))return '認証・アカウントを確認し、再ログインしてください。';
+ if(/オフライン|network|fetch|通信|timeout/i.test(s))return '通信に失敗しました。ネットワーク接続を確認してください。';
+ if(/入力・釣行中|編集中|入力が始まった/.test(s))return '入力・編集中のため中止しました。保存後に再実行してください。';
+ if(/件数|応答|形式|保存結果/.test(s))return '応答・結果を確認できませんでした。接続設定を確認してください。';
+ return '処理結果を確認できませんでした。接続・アカウント設定を確認してください。';
+}
+function result(raw,push,rod,changed){
+ const verb=push?'送信':'受信';
+ if(!changed)return {state:'cancel',text:'操作を終了しました。'+verb+'完了は確認されていません（確認画面でのキャンセルなど）。'};
+ if(/キャンセル/.test(raw))return {state:'cancel',text:verb+'をキャンセルしました。'};
+ if(/送信対象が0件/.test(raw))return {state:'empty',text:'送信対象は0件です。クラウドへの送信は行っていません。'};
+ if(/^クラウドに竿情報がありません/.test(raw))return {state:'empty',text:'新しく取り込む竿情報はありません。先にPCから反映してください。'};
+ if(/同期を完了できませんでした|同期に失敗しました/.test(raw))return {state:'error',text:verb+'できませんでした。原因：'+cause(raw)};
+ let detail='',success=false;
+ if(rod){const m=raw.match(/^(変更なし：|竿情報をクラウドへ反映しました：|竿情報を取得しました：)(\d+)本（版 (\d+)）/);if(m){success=true;detail=(m[1]==='変更なし：'?'変更なし：':'確認対象：')+m[2]+'本（版 '+m[3]+'）';}}
+ else if(push){const m=raw.match(/^クラウド初期登録が完了しました[\s\S]*今回登録・確認：(\d+)件/);if(m){success=true;detail='登録・確認：'+m[1]+'件（PCデータは変更していません）';}}
+ else{const m=raw.match(/^クラウド同期が完了しました\n取得：(\d+)件\n追加：(\d+)件\n更新：(\d+)件\n変更なし：(\d+)件\nゴミ箱のため保持：(\d+)件/);if(m){success=true;detail='取得：'+m[1]+'件／追加：'+m[2]+'件／更新：'+m[3]+'件\n変更なし：'+m[4]+'件／削除済みのため除外：'+m[5]+'件';if(Number(m[2])+Number(m[3])===0)detail+='\n新しく取り込むデータはありません。';if(raw.includes('再描画'))detail+='\n一部画面の再描画に問題があります。画面を開き直してください。';}}
+ return success?{state:'success',text:(push?'クラウドへの送信が完了しました':'クラウドからの受信が完了しました')+'\n'+detail}:{state:'error',text:verb+'できませんでした。原因：'+cause(raw)};
+}
+for(const[id,statusId,label,push]of specs){
+ const source=document.getElementById(id),button=document.querySelector('[data-action-source="'+id+'"]'),status=document.getElementById(statusId);if(!source||!button||!status||typeof source.onclick!=='function')continue;
+ const output=document.createElement('p');output.className='sync-result809r6';output.id='result809r6-'+id;output.setAttribute('role','status');output.setAttribute('aria-live','polite');output.hidden=true;button.insertAdjacentElement('afterend',output);
+ const original=source.onclick;let active=false;
+ const show=r=>{output.hidden=false;output.dataset.state=r.state;output.textContent=label+'：'+r.text;};
+ source.onclick=async function(event){if(active)return;active=true;const before=status.textContent;let changed=false;const observer=new MutationObserver(()=>{changed=true});observer.observe(status,{childList:true,characterData:true,subtree:true});show({state:'busy',text:push?'クラウドへ送信しています…':'クラウドから受信しています…'});
+ try{await original.call(this,event);changed=changed||observer.takeRecords().length>0||status.textContent!==before;const r=result(status.textContent,push,id.startsWith('rod'),changed);if(r.state==='success')r.text+='\n確認日時：'+new Date().toLocaleString('ja-JP');show(r);}catch(e){show({state:'error',text:(push?'送信':'受信')+'できませんでした。原因：'+cause(String(e?.message||''))});}finally{observer.disconnect();active=false;}
+ };
+}
+})();
+</script>
