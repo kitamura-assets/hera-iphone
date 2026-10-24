@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:'10a',build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:11,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -60687,9 +60687,9 @@ html.iphone-entry-v001 #iphoneLiveV515{
         <div id="lv515Current" class="lv515-current"></div>
       </div>
       <div class="lv515-live-actions">
-        <button class="lv515-btn lv515-gold" type="button" onclick="heraLiveV515.changeFishing()">釣り方を変更する</button>
-        <button class="lv515-btn lv515-soft" type="button" onclick="heraLiveV515.takePhoto()">📷 へら鮒を撮影する</button>
-        <button id="lv515FinishBtn" class="lv515-btn lv515-primary wide" type="button" onclick="heraLiveV515.finish()">■ 枚数を記録して、本日の釣りを終了する</button>
+        <button class="lv515-btn lv515-gold" type="button" onclick="heraLiveV515.changeFishing()"><svg class="live-action-icon809r11" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M5.2 7a8 8 0 0 1 13.2-1L20 8M4 16l1.6 2A8 8 0 0 0 18.8 17"/></svg><span>釣り方を変更する</span></button>
+        <button class="lv515-btn lv515-soft" type="button" onclick="heraLiveV515.takePhoto()"><svg class="live-action-icon809r11" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l1.5-2h5L16 5h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="4"/></svg><span>へら鮒を撮影する</span></button>
+        <button id="lv515FinishBtn" class="lv515-btn lv515-primary wide" type="button" onclick="heraLiveV515.finish()"><svg class="live-action-icon809r11" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3H3v18h7M3 3l7 2v14l-7 2M14 7l5 5-5 5M10 12h11"/></svg><span>本日の釣りを終了する</span></button>
       </div>
       <div id="lv515FinishToast" class="lv515-finish-toast" aria-live="polite" hidden></div>
       <div id="lv515ChangeConfirm" class="lv515-overlay" hidden>
@@ -60986,7 +60986,7 @@ function fishingModeLabel(method){return /底/.test(method||'')?'底':((method||
      box.classList.add('is-show');
    }
  }
- function open(){if(!isIPhoneMode())return;let el=$('#iphoneLiveV515');if(el)el.classList.add('is-open');hideFinishToast();paint();window.scrollTo(0,0)}
+ function open(){if(!isIPhoneMode())return;let el=$('#iphoneLiveV515');if(el)el.classList.add('is-open');hideFinishToast();paint();window.scrollTo(0,0);const body=el?.querySelector('.lv515-body');if(body)body.scrollTo({top:0,left:0,behavior:'instant'});if(el)el.scrollTop=0;requestAnimationFrame(()=>{if(el?.classList.contains('is-open')){window.scrollTo(0,0);el.scrollTop=0;body?.scrollTo({top:0,left:0,behavior:'instant'});}})}
  function close(){let el=$('#iphoneLiveV515');if(el)el.classList.remove('is-open');hideFinishToast();hideChangeFishingConfirm();hideFinishConfirm()}
  function showEntryPreserve(){
    document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});
@@ -83899,3 +83899,31 @@ html.trip-green809r7.iphone-live-review-step4-v570 #entry#entry#entry#entry#entr
 /* The legacy basic-header decoration has z-index:3; keep its new background behind the existing text layer (1). */
 html.trip-green809r7 #entry#entry#entry#entry#entry#entry#entry#entry#entry#entry#entry#entry#entry .entry-basic-head::before{z-index:0!important;}
 </style>
+
+<style id="live-actions809r11">
+#iphoneHomeB619 .ih619-actions{display:none!important;}
+html.trip-green809r7 #iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 .lv515-live-actions>button{display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;color:#fff!important;-webkit-text-fill-color:#fff!important;}
+html.trip-green809r7 #iphoneLiveV515 .lv515-live-actions .live-action-icon809r11{width:28px!important;height:28px!important;flex:0 0 28px;color:#fff!important;fill:none!important;stroke:currentColor!important;}
+html.trip-green809r7 #iphoneLiveV515 .lv515-live-actions>button>span{min-width:0;line-height:1.45;text-align:center;}
+/* Preserve the existing special-place suppression of the change-method action. */
+html.trip-green809r7 #iphoneLiveV515#iphoneLiveV515#iphoneLiveV515.special-counter806 .lv515-live-actions>button[onclick*="changeFishing"]{display:none!important;}
+</style>
+
+<script id="live-return-scroll809r11">
+(function(){
+ const live=document.getElementById('iphoneLiveV515');if(!live)return;
+ let visible=false;
+ function check(){
+  const next=live.classList.contains('is-open')&&!document.documentElement.classList.contains('v619-home-open');
+  if(next&&!visible)requestAnimationFrame(()=>{
+   if(!live.classList.contains('is-open')||document.documentElement.classList.contains('v619-home-open'))return;
+   window.scrollTo(0,0);live.scrollTop=0;const body=live.querySelector('.lv515-body');if(body)body.scrollTop=0;
+  });
+  visible=next;
+ }
+ const observer=new MutationObserver(check);
+ observer.observe(live,{attributes:true,attributeFilter:['class']});
+ observer.observe(document.documentElement,{attributes:true,attributeFilter:['class']});check();
+})();
+</script>
+<style>html.trip-green809r7 #iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 .live-action-icon809r11,html.trip-green809r7 #iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515 .live-action-icon809r11 *{stroke:#fff!important;fill:none!important;color:#fff!important;}</style>
