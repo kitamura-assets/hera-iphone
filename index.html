@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:13,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:14,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -82226,19 +82226,51 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const ids=new Set();for(const m of rows){const id=m.owner_id+'/'+m.photo_id;if(ids.has(id)||!/^[-a-f0-9]{36}$/.test(m.owner_id)||!/^[a-f0-9]{64}$/.test(m.photo_id)||!/^[a-f0-9]{64}$/.test(m.sha256)||m.storage_path!==id||typeof m.record_id!=='string'||!m.record_id||!Number.isInteger(m.sort_order)||m.sort_order<0||m.sort_order>9||!Number.isSafeInteger(m.byte_size)||m.byte_size<1||m.byte_size>52428800||!['image/jpeg','image/png','image/webp','image/gif'].includes(m.mime)||![0,90,180,270].includes(m.rotation))throw Error('写真の紐付け情報が不正です。');ids.add(id);}
     return rows;
   }
-  async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){message(e.name==='AbortError'?'写真通信を停止しました。次回ボタンで再試行してください。':'エラー：'+e.message);throw e;}finally{batch=null;controls();const valid=new Set(api.localRecords().map(r=>r.id));let count=0;for(const [rid,keys] of await heraPhotoMemory806.inventory())if(valid.has(rid))count+=keys.length;$('photo806Counts').textContent='端末内の釣行写真：'+count+'枚。未同期数・容量は「写真状況を確認」で確認できます。';}});}
+  async function transfer(fn){if(api.identity.busy)return;await api.run(async()=>{batch=new AbortController();controls();try{progress14=null;if(api.pendingEntry())throw Error('編集中の記録を保存し、釣行を終了してから実行してください。');await fn();}catch(e){const detail=progress14?'\n'+progress14.kind+'完了：'+progress14.done+'枚／未完了（一覧未確定を含む）：'+(progress14.total===null?'確認できません':Math.max(0,progress14.total-progress14.done)+'枚'):'';message('エラー：'+safeError14(e)+detail+'\n元の写真は保持しています。再試行できます。');throw Error(safeError14(e));}finally{batch=null;controls();const valid=new Set(api.localRecords().map(r=>r.id));let count=0;for(const [rid,keys] of await heraPhotoMemory806.inventory())if(valid.has(rid))count+=keys.length;$('photo806Counts').textContent='端末内の釣行写真：'+count+'枚。未同期数・容量は「写真状況を確認」で確認できます。';}});}
+  // Keep only identity/hash metadata between records, never all image strings/Blobs.
+  async function summaryPhotos(){
+    const out=[],valid=new Set(api.localRecords().map(r=>r.id));
+    for(const rid of (await heraPhotoMemory806.inventory()).keys()){
+      if(!valid.has(rid))continue;checkBatch();
+      for(const p of await scan(rid))out.push({meta:p.meta,bytes:p.blob.size,rowHash:await hash(api.stable(p.row))});
+    }
+    return out;
+  }
+  let progress14=null;
+  function safeError14(e){
+    if(e?.name==='AbortError')return '通信が中断されました。設定画面で再試行してください。';
+    return String(e?.message||'不明なエラー').replace(/Bearer\s+\S+|(?:sb_secret_|sb_publishable_)[\w.-]+|eyJ[\w-]+\.[\w-]+\.[\w-]+/gi,'[非表示]').slice(0,500);
+  }
+  function confirmPhoto14(text){
+    return new Promise(resolve=>{
+      const box=document.createElement('div');box.id='photoConfirm809r14';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+      Object.assign(box.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'#0008',display:'grid',placeItems:'center',padding:'16px'});
+      const card=document.createElement('div');Object.assign(card.style,{background:'#fffdf7',color:'#242424',borderRadius:'18px',padding:'20px',maxWidth:'440px',width:'100%',boxSizing:'border-box',whiteSpace:'pre-wrap'});
+      const message=document.createElement('p');message.textContent=text;card.append(message);
+      const done=value=>{batch?.signal.removeEventListener('abort',abort);box.remove();resolve(value);};const abort=()=>done(false);
+      for(const [label,value]of [['キャンセル',false],['OK',true]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.className=value?'primary':'secondary';b.style.margin='8px';b.onclick=e=>{e.preventDefault();e.stopPropagation();done(value);};card.append(b);}
+      box.onkeydown=e=>{if(e.key==='Escape'){e.stopPropagation();done(false);}};
+      box.append(card);document.body.append(box);batch?.signal.addEventListener('abort',abort,{once:true});card.lastChild.focus();
+    });
+  }
   async function upload(){
     if(!api.phone()||api.identity.role!=='reader')throw Error('写真送信はiPhone読取用アカウントで実行してください。');
     message('写真を確認しています。枚数・容量の確認後に送信確認を表示します。まだクラウドへ送信していません。');
-    checkNetwork();const uid=api.identity.uid,photos=await scan(),receipts=await stateGet('up:'+uid);
-    const bytes=photos.filter(p=>!receipts[p.meta.photo_id]?.uploaded).reduce((n,p)=>n+p.blob.size,0);
-    if(!confirm('自宅Wi-Fiに接続していますか？\n写真 '+photos.length+'枚を確認し、未送信分だけを送ります（最大約'+(bytes/1048576).toFixed(2)+'MB）。\n通信種別は確実には判定できません。続けますか？')){message('写真送信をキャンセルしました。端末内の写真は変更していません。');return;}
-    checkBatch();const remote=await manifest(),remoteMap=new Map(remote.map(m=>[m.photo_id,m]));
+    checkNetwork();const uid=api.identity.uid,photos=await summaryPhotos(),receipts=await stateGet('up:'+uid);
+    progress14={kind:'送信',total:null,done:0};
+    const bytes=photos.filter(p=>!receipts[p.meta.photo_id]?.uploaded).reduce((n,p)=>n+p.bytes,0);
+    if(!await confirmPhoto14('自宅Wi-Fiに接続していますか？\n写真 '+photos.length+'枚を確認し、未送信分だけを送ります（最大約'+(bytes/1048576).toFixed(2)+'MB）。\n通信種別は確実には判定できません。続けますか？')){message('写真送信をキャンセルしました。端末内の写真は変更していません。');return;}
+    checkBatch();message('クラウドの未送信写真を確認しています…');const remote=await manifest(),remoteMap=new Map(remote.map(m=>[m.photo_id,m]));
+    const pendingIds=new Set(photos.filter(p=>{const old=remoteMap.get(p.meta.photo_id);return !(old&&(old.pc_confirmed||old.owner_id!==uid||old.active&&signature(old)===signature(p.meta)));}).map(p=>p.meta.photo_id));
+    progress14.total=pendingIds.size;
     const groups=new Map();for(const p of photos){if(!groups.has(p.meta.record_id))groups.set(p.meta.record_id,[]);groups.get(p.meta.record_id).push(p);}
     // Include records whose local photos were all deleted, to retire metadata only.
     const activeRecords=new Set(api.localRecords().map(r=>r.id));for(const r of remote)if(r.owner_id===uid&&r.active&&activeRecords.has(r.record_id)&&!groups.has(r.record_id))groups.set(r.record_id,[]);
     let sent=0,skipped=0,committed=0,protectedCount=0;
-    for(const [rid,list] of groups){
+    for(const [rid,summary] of groups){
+      const list=await scan(rid);
+      if(list.length!==summary.length)throw Error('確認後に写真が変更されました。再試行してください。');
+      for(let i=0;i<list.length;i++)if(await hash(api.stable(list[i].row))!==summary[i].rowHash)throw Error('確認後に写真が変更されました。再試行してください。');
       if(list.length>10)throw Error('1釣行の写真が10枚を超えています。');
       const expected=api.stable(list.map(p=>p.row));
       for(const p of list){checkBatch();const m=p.meta;m.storage_path=uid+'/'+m.photo_id;
@@ -82249,9 +82281,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         let exists=false;
         try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'HEAD',signal:batch.signal});exists=true;}catch(e){if(![400,404].includes(e.status))throw e;}
         if(exists){receipts[m.photo_id]={uploaded:true};await stateSet('up:'+uid,receipts);skipped++;continue;}
-        message('写真を送信中：'+(sent+1)+'枚目／'+photos.length+'枚（1枚ずつ処理）');
-        try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'POST',headers:{'Content-Type':m.mime,'x-upsert':'false'},body:p.blob,signal:batch.signal,responseType:'json'});}catch(e){if(e.status!==409)throw e;}
-        receipts[m.photo_id]={uploaded:true};await stateSet('up:'+uid,receipts);sent++;
+        message('写真を送信中 '+progress14.done+'／'+progress14.total+'枚（現在の写真を処理中・確認総数 '+photos.length+'枚）');
+        let uploadedNow=true;try{await api.rawRequest('/storage/v1/object/'+BUCKET+'/'+m.storage_path,{method:'POST',headers:{'Content-Type':m.mime,'x-upsert':'false'},body:p.blob,signal:batch.signal,responseType:'json'});}catch(e){if(e.status!==409)throw e;uploadedNow=false;}
+        receipts[m.photo_id]={uploaded:true};await stateSet('up:'+uid,receipts);if(uploadedNow)sent++;else skipped++;
       }
       checkBatch();const current=await photoGetAll(rid);
       if(api.stable(current)!==expected||!api.localRecords().some(r=>r.id===rid))throw Error('送信中に写真・釣行が変更されました。写真一覧の確定を中止しました。再度ボタンで確認してください。');
@@ -82259,10 +82291,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       const oldActive=remote.filter(r=>r.owner_id===uid&&r.record_id===rid&&r.active&&!r.pc_confirmed);
       const same=oldActive.length===editable.length&&editable.every(p=>oldActive.some(r=>r.photo_id===p.meta.photo_id&&signature(r)===signature(p.meta)));
       if(!same){try{const result=await api.request('/rest/v1/rpc/hera_photo_commit806',{trip_id:rid,items:editable.map(p=>p.meta)});if(result.accepted!==editable.length)throw Error('写真一覧の確定件数が一致しません。');if(editable.some(p=>p.meta.rotation!==0)){const confirmed=await manifest();if(!editable.every(p=>confirmed.some(m=>m.owner_id===uid&&m.active&&m.photo_id===p.meta.photo_id&&signature(m)===signature(p.meta))))throw Error('回転情報を確認できません。Supabaseで追加の supabase-photo-rotation806.sql を実行してから再試行してください。');}}catch(e){/* Uploaded bytes remain; only a committed signature counts as synced. */throw e;}}
-      for(const p of list)receipts[p.meta.photo_id]={uploaded:true,signature:signature(p.meta)};
+      for(const p of editable)receipts[p.meta.photo_id]={uploaded:true,signature:signature(p.meta)};
       await stateSet('up:'+uid,receipts);committed+=list.length;
+      progress14.done+=list.filter(p=>pendingIds.has(p.meta.photo_id)).length;message('写真を送信中 '+progress14.done+'／'+progress14.total+'枚（一覧確定済み）');
     }
-    message('写真同期が完了しました\n新規送信：'+sent+'枚／本体の送信不要：'+skipped+'枚\n同期済み確認：'+committed+'枚\nPC確定済み：'+protectedCount+'枚（変更せず保持）。最新の向き・削除・順序は「クラウドから写真状態を取得」で反映してください。\n端末の写真はそのまま残しています。');
+    message((sent?'写真'+sent+'枚を送信しました':'未送信の写真はありません')+'\n写真一覧の同期完了：'+progress14.done+'枚\n新規本体送信：'+sent+'枚／本体の送信不要：'+skipped+'枚\n同期済み確認：'+committed+'枚\nPC確定済み：'+protectedCount+'枚（変更せず保持）。最新の向き・削除・順序は「クラウドから写真状態を取得」で反映してください。\n端末の写真はそのまま残しています。');
   }
   async function blobData(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});}
   async function appendPhotos(rid,before,rows){
@@ -82275,8 +82308,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });}finally{db.close();}
   }
   async function download(){
-    if(api.phone()||api.identity.role!=='writer')throw Error('写真取得はPC書込用アカウントで実行してください。');checkNetwork();
-    const remote=(await manifest()).filter(r=>r.active),records=new Set(api.localRecords().map(r=>r.id)),local=await scan(),receipts=await stateGet('down:'+api.identity.uid),groups=new Map();
+    if(api.phone()||api.identity.role!=='writer')throw Error('写真取得はPC書込用アカウントで実行してください。');checkNetwork();progress14={kind:'取得',total:null,done:0};message('クラウドの未取得写真を確認しています…');
+    const remote=(await manifest()).filter(r=>r.active),records=new Set(api.localRecords().map(r=>r.id)),local=await summaryPhotos(),receipts=await stateGet('down:'+api.identity.uid),groups=new Map();
     let waiting=0,kept=0,deleted=0,limit=0;const tombstones=new Map();
     for(const m of remote.sort((a,b)=>a.record_id.localeCompare(b.record_id)||a.sort_order-b.sort_order||a.photo_id.localeCompare(b.photo_id))){
       if(!records.has(m.record_id)){waiting++;continue;}
@@ -82290,11 +82323,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       if(count+list.length>=10){limit++;continue;}list.push(m);
     }
     const pending=[...groups.values()].flat(),bytes=pending.reduce((n,m)=>n+m.byte_size,0);
-    if(!confirm('Wi-Fiへの接続を確認してください。\n未取得写真 '+pending.length+'枚、約'+(bytes/1048576).toFixed(2)+'MBを取得します。既存写真は上書き・削除しません。'))return;
+    progress14.total=pending.length;
+    if(!pending.length){message('写真取得：0枚。取得処理は正常に完了しました。\n'+(waiting||limit?'未取得写真はありますが保留しています。釣行を先に受信するか、写真上限を確認してください。':'クラウドに取得可能な未取得写真はありません。')+'\n既存：'+kept+'枚／釣行未取込：'+waiting+'枚／削除・変更済み保護：'+deleted+'枚／上限保留：'+limit+'枚');return;}
+    if(!await confirmPhoto14('Wi-Fiへの接続を確認してください。\n未取得写真 '+pending.length+'枚、約'+(bytes/1048576).toFixed(2)+'MBを取得します。既存写真は上書き・削除しません。')){message('写真取得をキャンセルしました。既存写真は保持しています。');return;}
     let downloaded=0;
     for(const [rid,list] of groups){
       const before=await photoGetAll(rid),rows=[];
-      if(api.stable(before)!==api.stable(local.filter(p=>p.meta.record_id===rid).map(p=>p.row)))throw Error('確認中にPCの写真が変更されました。再実行してください。');
+      const snapshot=local.filter(p=>p.meta.record_id===rid);
+      if(before.length!==snapshot.length||!(await Promise.all(before.map((r,i)=>hash(api.stable(r)).then(h=>h===snapshot[i].rowHash)))).every(Boolean))throw Error('確認中にPCの写真が変更されました。再実行してください。');
       for(const m of list){checkBatch();message('写真を取得中：'+(downloaded+rows.length+1)+'枚目／'+pending.length+'枚');
         const blob=await api.rawRequest('/storage/v1/object/authenticated/'+BUCKET+'/'+m.storage_path,{method:'GET',signal:batch.signal,responseType:'blob'});
         if(blob.size!==m.byte_size||await hash(await blob.arrayBuffer())!==m.sha256)throw Error('取得写真のハッシュ・容量が一致しません。PCへの保存を中止しました。');
@@ -82303,7 +82339,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         rows.push({key:rid+':'+order,recordId:rid,order,photo_id:m.photo_id,originalData,rotation:m.rotation,data:await window.photoRotateData806(originalData,m.rotation),name:m.name||''});
       }
       checkBatch();if(api.pendingEntry()||!api.localRecords().some(r=>r.id===rid))throw Error('取得中に釣行の編集・削除が始まったため保存を中止しました。');
-      await appendPhotos(rid,before,rows);list.forEach(m=>{receipts[m.owner_id+'/'+m.photo_id]={sha256:m.sha256};});await stateSet('down:'+api.identity.uid,receipts);downloaded+=rows.length;
+      await appendPhotos(rid,before,rows);list.forEach(m=>{receipts[m.owner_id+'/'+m.photo_id]={sha256:m.sha256};});await stateSet('down:'+api.identity.uid,receipts);downloaded+=rows.length;progress14.done=downloaded;
     }
     await stateSet('down:'+api.identity.uid,receipts);api.redraw();
     message('写真取得が完了しました\n新規取得：'+downloaded+'枚／既存：'+kept+'枚\n釣行未取込：'+waiting+'枚／端末で削除・変更済み：'+deleted+'枚／10枚上限：'+limit+'枚\n釣行未取込分は、当日JSON等で釣行をPCへ取り込んでから再実行してください。');
