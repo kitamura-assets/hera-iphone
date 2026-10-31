@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:15,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:16,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -84073,8 +84073,8 @@ html.trip-green809r7 #specialResultModal806 .special-result-cancel806{background
  document.addEventListener('click',mark,true);
  const show=window.showElegantSaveOverlayV587;
  if(typeof show==='function')window.showElegantSaveOverlayV587=function(){
-  if(editing())overlay.classList.remove('live-finish809r15');
-  else if(root.classList.contains('trip-green809r7'))overlay.classList.add('live-finish809r15');
+  // New saves assign editId before this callback. Preserve the pre-save presentation context.
+  if(!editing()&&root.classList.contains('trip-green809r7'))overlay.classList.add('live-finish809r15');
   return show.apply(this,arguments);
  };
  let visible=overlay.classList.contains('show');new MutationObserver(()=>{const next=overlay.classList.contains('show');if(visible&&!next)overlay.classList.remove('live-finish809r15');visible=next;}).observe(overlay,{attributes:true,attributeFilter:['class']});
