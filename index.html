@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:17,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:18,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -12993,7 +12993,11 @@ async function fetchWeatherForEntry(manual=false){
     return;
   }
 
-  let loc=await autoResolveWeatherLocationV588(place);
+  const requestId=fetchWeatherForEntry.requestId=(fetchWeatherForEntry.requestId||0)+1;
+  const fail=message=>{if(requestId===fetchWeatherForEntry.requestId)st.textContent='天気を取得できませんでした。'+message+' 天気欄はそのままです。天気なしでも入力・保存できます。';return false;};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date+'T00:00:00+09:00')))return fail('日付を確認してください。');
+  let loc;try{loc=await autoResolveWeatherLocationV588(place);}catch(_e){return fail('釣り場の位置情報を確認できません。登録した住所・緯度経度を確認してください。');}
+  if(loc&&(!Number.isFinite(+loc.lat)||!Number.isFinite(+loc.lon)||Math.abs(+loc.lat)>90||Math.abs(+loc.lon)>180))return fail('釣り場の緯度経度が不正です。');
   if(!loc){
     st.innerHTML='<span class="weather-warn">位置情報を自動確認できませんでした。</span> 「釣り場」画面で住所・位置を一度登録すると、次回から自動取得できます。';
     if(manual)alert('この釣り場の位置情報を自動確認できませんでした。釣り場画面で住所・位置を設定してください。');
@@ -13005,7 +13009,7 @@ async function fetchWeatherForEntry(manual=false){
 
   function mins(t){
     const m=String(t||'').match(/^(\d{1,2}):(\d{2})$/);
-    return m?(+m[1]*60 + +m[2]):null;
+    return m&&+m[1]<24&&+m[2]<60?(+m[1]*60 + +m[2]):null;
   }
   const a=mins(startText), b0=mins(endText);
   if(a==null||b0==null){
@@ -13019,10 +13023,10 @@ async function fetchWeatherForEntry(manual=false){
   const mid=Math.round((a+b)/2);
   const midDayOffset=Math.floor(mid/1440);
   const midMin=((mid%1440)+1440)%1440;
-  const targetHour=Math.round(midMin/60)%24;
+  const roundedHour=Math.round(midMin/60),targetHour=roundedHour%24;
 
   const targetDateObj=new Date(date+'T12:00:00');
-  targetDateObj.setDate(targetDateObj.getDate()+midDayOffset);
+  targetDateObj.setDate(targetDateObj.getDate()+midDayOffset+(roundedHour===24?1:0));
   const targetDate=[
     targetDateObj.getFullYear(),
     String(targetDateObj.getMonth()+1).padStart(2,'0'),
@@ -13035,20 +13039,29 @@ async function fetchWeatherForEntry(manual=false){
   st.textContent=`${midLabel}ごろの天気を取得しています…`;
 
   try{
-    let today=new Date().toISOString().slice(0,10),
-        diff=dateDiffDays(targetDate,today),
-        base;
-
-    if(diff>=-5) base='https://api.open-meteo.com/v1/forecast';
-    else base='https://archive-api.open-meteo.com/v1/archive';
-
+    const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const diff=dateDiffDays(targetDate,today);
+    if(targetDate<'1940-01-01')return fail('1940年より前の日付はAPIの対応範囲外です。');
+    if(diff>15)return fail('予報の対応範囲は本日から15日先までです。');
+    const forecast='https://api.open-meteo.com/v1/forecast',archive='https://archive-api.open-meteo.com/v1/archive';
+    const sources=diff>=-5?(diff<=0?[forecast,archive]:[forecast]):[archive];
     const hourly='weather_code,temperature_2m,precipitation,wind_speed_10m,wind_direction_10m';
-    const u=`${base}?latitude=${encodeURIComponent(loc.lat)}&longitude=${encodeURIComponent(loc.lon)}&hourly=${hourly}&wind_speed_unit=ms&timezone=Asia%2FTokyo&start_date=${targetDate}&end_date=${targetDate}`;
-
-    let r=await fetch(u);
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    let j=await r.json(),h=j.hourly||{};
-    if(!h.time||!h.time.length)throw new Error('no data');
+    let h,usedSource,errors=[];
+    for(const base of sources){
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+      try{
+        const u=base+'?latitude='+encodeURIComponent(loc.lat)+'&longitude='+encodeURIComponent(loc.lon)+'&hourly='+hourly+'&wind_speed_unit=ms&timezone=Asia%2FTokyo&start_date='+targetDate+'&end_date='+targetDate;
+        const r=await fetch(u,{signal:controller.signal});
+        if(!r.ok)throw Error(r.status===429?'アクセス制限（HTTP 429）。時間をおいて再取得してください。':'API応答エラー（HTTP '+r.status+'）。');
+        let j;try{j=await r.json();}catch(_e){throw Error('APIの応答がJSON形式ではありません。');}
+        const candidate=j.hourly,idx=candidate?.time?.indexOf(targetDate+'T'+hourLabel);
+        if(!Array.isArray(candidate?.time)||idx<0||!Number.isFinite(candidate?.weather_code?.[idx])||!Number.isFinite(candidate?.temperature_2m?.[idx]))throw Error('指定日時の天気データが未提供、または欠損しています。');
+        h=candidate;usedSource=base;break;
+      }catch(e){errors.push((base===forecast?'予報API：':'過去天気API：')+(e.name==='AbortError'?'接続がタイムアウトしました。':e instanceof TypeError?'接続できません（通信・TLS・ブラウザ制限の可能性）。':e.message));}
+      finally{clearTimeout(timer);}
+    }
+    if(!h)return fail(errors.join(' '));
+    if(requestId!==fetchWeatherForEntry.requestId||f.place.value.trim()!==place||f.date.value!==date||(getEntryTime('start')||f.start?.value||'10:30')!==startText||(getEntryTime('end')||f.end?.value||'16:00')!==endText)return false;
 
     const targetIso=`${targetDate}T${hourLabel}`;
     let i=h.time.indexOf(targetIso);
@@ -13078,14 +13091,11 @@ async function fetchWeatherForEntry(manual=false){
     if(ws!=null)parts.push(`${windJa(wd)}風 ${(+ws).toFixed(1)}m/s`);
 
     f.weather.value=parts.filter(Boolean).join(' / ');
-    st.innerHTML=`<span class="weather-ok">自動取得しました。</span> 開始 ${startText}・終了 ${endText} の中間 ${midLabel} に最も近い <b>${hourLabel}</b> のデータです。`;
+    st.innerHTML=`<span class="weather-ok">自動取得しました。${usedSource===archive?'（過去天気API）':''}</span> 開始 ${startText}・終了 ${endText} の中間 ${midLabel} に最も近い <b>${hourLabel}</b> のデータです。`;
     dirty=true;
     return true;
   }catch(e){
-    console.error(e);
-    st.innerHTML='<span class="weather-warn">天気を取得できませんでした。</span> 日付・時刻・インターネット接続を確認してください。';
-    if(manual)alert('天気を取得できませんでした。');
-    return false;
+    return fail('取得処理でエラーが発生しました。再取得してください。');
   }
 }
 function maybeAutoWeatherV11456(){
