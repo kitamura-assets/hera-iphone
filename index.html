@@ -2,7 +2,7 @@
 <html lang="ja" class="search-booting-v1146"><head>
 <script id="app-release807">
 // Release procedure: increment revision for each published 807 correction.
-window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:19,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
+window.HERA_RELEASE=Object.freeze({version:'1.1.809',revision:20,build:"2026/10/22 開発版",get label(){return 'Ver.'+this.version+(this.revision?'-r'+this.revision:'');}});
 document.documentElement.style.setProperty('--app-build-label',JSON.stringify('Build: '+window.HERA_RELEASE.build));
 document.addEventListener('DOMContentLoaded',()=>{document.title='へらぶな釣り日誌 '+window.HERA_RELEASE.label;document.querySelectorAll('[data-release-label]').forEach(el=>el.textContent=window.HERA_RELEASE.label);},{once:true});
 </script>
@@ -51705,6 +51705,11 @@ html.iphone-entry-v001 #places .map-toolbar{position:sticky!important;top:0!impo
         box.innerHTML='';
         d.segments.forEach(s=>addSegment(s));
       }
+      const liveHourly=JSON.parse(localStorage.getItem('hera_live_trip_v515')||'null');
+      if(liveHourly?.running&&liveHourly?.hourly20?.enabled){
+        window.restoreCatchEventsForEditV11796(window.parseCatchTimesV11660(x.catchTimesJson));
+        if(f.elements.specialRyanko806)f.elements.specialRyanko806.value=x.specialRyanko806||'[]';
+      }
       try{updateWaterLevelVisibility()}catch(_e){}
       try{calcEntry()}catch(_e){}
       const msg=document.getElementById('saveMsg');
@@ -71726,7 +71731,7 @@ html.iphone-entry-v001 #entry #ryankoSummaryV11796{margin-left:14px;margin-right
     return '<div class="ryanko-record-v11796"><strong>リャンコ　'+events.length+'回</strong><div class="ryanko-times">'+events.map(function(e){
       var time=String(e.time||String(e.at||'').split('T')[1]||'');
       var m=time.match(/^(\d{2}):(\d{2})/);
-      return '<span>'+(m?m[1]+':'+m[2]:'時刻未記録')+'</span>';
+      return '<span>'+(e.hourly&&m?Number(m[1])+'時〜'+((Number(m[1])+1)%24)+'時（まとめ）':m?m[1]+':'+m[2]:'時刻未記録')+'</span>';
     }).join('')+'</div></div>';
   }
   function paintRyanko(a){
@@ -71813,7 +71818,7 @@ html.iphone-entry-v001 #entry #ryankoSummaryV11796{margin-left:14px;margin-right
     a=Array.isArray(a)?a:loadEvents();
     var last=a.length?a[a.length-1]:null;
     el.innerHTML=last
-      ? '直近のカウント <strong>'+String(last.time||'--:--:--')+'</strong>　（秒まで記録）'
+      ? (last.hourly?'直近は時間帯のまとめ入力です':'直近のカウント <strong>'+String(last.time||'--:--:--')+'</strong>　（秒まで記録）')
       : 'カウンターを押すと時刻を秒まで記録します';
   }
 
@@ -71856,7 +71861,7 @@ html.iphone-entry-v001 #entry #ryankoSummaryV11796{margin-left:14px;margin-right
         'が同数で好調（各'+bestCount+'枚）。';
     }
 
-    text+=' カウンター'+a.length+'回の押下時刻から自動判定。';
+    text+=a.some(e=>e.hourly)?' 時間帯の記録から自動判定。':' カウンター'+a.length+'回の押下時刻から自動判定。';
     return {text:text,peak:broadPeak(best),bestHour:best,bestCount:bestCount};
   }
 
@@ -78743,7 +78748,9 @@ html.iphone-entry-v001 #entry{
       try{ev.stopImmediatePropagation()}catch(_e){}
     }
 
-    resetNewEntryStateV11806();
+    const liveHourly=JSON.parse(localStorage.getItem('hera_live_trip_v515')||'null');
+    if(liveHourly?.running&&liveHourly?.hourly20?.enabled)window.__newTripActive806=true;
+    else resetNewEntryStateV11806();
     clearHomeForcedStyles();
 
     /* Bホーム自身を確実に閉じる */
@@ -84142,5 +84149,222 @@ html.trip-green809r7 #specialResultModal806 .special-result-cancel806{background
   }catch(e){output.textContent=(trips?'一部未完了：写真取得\n'+summary(trips):'釣行記録を取得できませんでした。写真取得は実行していません。反映状況は再試行時に再確認します。')+'\n原因：'+safe(e)+'\n既存データは保持しています。';}
   finally{observer?.disconnect();busy=false;button.disabled=false;}
  };
+})();
+</script>
+
+<style id="hourly809r20-style">#iphoneLiveV515 #hourToggle20{display:flex;gap:4px;padding:5px;border:1px solid #9abdaf;border-radius:28px;background:#f5faf6;margin-bottom:14px;box-shadow:0 3px 10px #174d3320}
+#iphoneLiveV515 #hourToggle20[hidden],#iphoneLiveV515 #hourly809r20[hidden]{display:none!important}
+#iphoneLiveV515 #hourToggle20 button{flex:1;min-width:0;min-height:52px;padding:8px 6px;font-size:14px;line-height:1.5;border:0;border-radius:24px;background:transparent;color:#154b3a;font-weight:700}
+#iphoneLiveV515 #hourToggle20 button[aria-pressed=true]{background:linear-gradient(130deg,#287355,#004638);color:white}
+#iphoneLiveV515.hourly-open20 #lv515Running>.lv515-counter-card,#iphoneLiveV515.hourly-open20 #specialSegmentLog806{display:none!important}
+#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515.special-counter806.hourly-enabled20 .lv515-plus,#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515.special-counter806.hourly-enabled20 .lv515-minus,#iphoneLiveV515#iphoneLiveV515#iphoneLiveV515.special-counter806.hourly-enabled20 .lv515-ryanko{display:block!important;width:100%}
+#iphoneLiveV515 #hourly809r20{color:#123e31;font-size:15px;line-height:1.5;margin-bottom:18px}
+#hourly809r20 .hour-total{display:flex;align-items:center;justify-content:space-around;gap:10px;background:linear-gradient(130deg,#357c5d,#004938);border:1px solid #a6c6b8;border-radius:22px;color:white;padding:17px 10px;margin-bottom:15px;box-shadow:0 5px 14px #194e3324}
+#hourly809r20 .hour-total span{flex:1;text-align:center;font-size:13px}
+#hourly809r20 .hour-total span+span{border-left:1px solid #ffffff66}
+#hourly809r20 .hour-total strong{display:inline-block;font-size:40px;line-height:1.2;font-family:Georgia,serif;margin:0 4px}
+#hourly809r20 .hour-card{border:1px solid #a6c6b8;border-radius:22px;overflow:hidden;background:linear-gradient(#fff,#eef7f1);box-shadow:0 6px 16px #174d3318}
+#hourly809r20 header{background:linear-gradient(120deg,#176449,#004638);color:#fff;padding:15px}
+#hourly809r20 header h2{font:700 25px/1.4 'Yu Mincho',serif;margin:0;color:inherit}
+#hourly809r20 header p{font-size:12px;margin:4px 0 0}
+#hourly809r20 .hour-content{padding:14px}
+#hourly809r20 label{display:block;margin:8px 0;font-weight:700}
+#hourly809r20 select{width:100%;min-height:46px;border:1px solid #a0beaf;border-radius:12px;background:white;color:#164c39;font-size:15px;margin-top:6px;padding:8px;box-sizing:border-box}
+#hourly809r20 .hour-editor{border:1px solid #8db4a3;border-radius:20px;background:#f9fcf9;padding:14px;margin-top:15px;text-align:center;box-shadow:0 4px 9px #194f3320}
+#hourly809r20 .hour-editor h3{background:#11553e;color:white;font:700 25px/1.4 'Yu Mincho',serif;margin:-14px -14px 10px;padding:14px;border-radius:19px 19px 0 0}
+#hourly809r20 #hourState20{display:inline-block;background:#deeee3;border-radius:20px;padding:3px 12px;font-size:12px}
+#hourly809r20 .hour-number{display:grid;grid-template-columns:46px minmax(0,1fr) 46px;align-items:center;gap:12px}
+#hourly809r20 button,#hourReminder20 button{cursor:pointer;min-height:44px;border:1px solid #99bbaa;background:#eff7f0;color:#134a36;border-radius:14px;padding:8px;font:700 14px/1.4 sans-serif}
+#hourly809r20 .hour-number button{border-radius:50%;font-size:28px;height:46px;padding:0}
+#hourly809r20 .hour-number input{min-width:0;width:100%;box-sizing:border-box;text-align:center;background:#fff;border:1px solid #96baaa;border-radius:15px;color:#073c2c;font:700 48px/1.3 Georgia,serif;height:76px;padding:5px}
+#hourly809r20 .hour-pair input{height:52px;font-size:30px}
+#hourly809r20 .hour-presets{display:flex;gap:6px;margin:12px 0 18px}
+#hourly809r20 .hour-presets button{flex:1;min-width:0;border:0;background:#deeee2;border-radius:20px}
+#hourly809r20 .hour-help{font-size:12px;line-height:1.7;color:#3a6554;margin:13px 0}
+#hourly809r20 #hourMessage20{white-space:pre-line;color:#164b36;font-size:14px}
+#hourly809r20 h3{font-size:19px;margin:16px 0 10px;color:#163f31}
+#hourly809r20 #hourList20{border:1px solid #a2c0b0;background:#fff;border-radius:16px;overflow:hidden}
+#hourly809r20 #hourList20 button{display:block;width:100%;border:0;border-bottom:1px solid #d8e5dc;border-radius:0;text-align:left;background:#fff;padding:12px;font-size:13px;overflow-wrap:anywhere}
+#hourly809r20 #hourList20 button.selected{background:#e2f0e5;box-shadow:inset 3px 0 #16825c}
+#hourly809r20 .hour-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+#hourly809r20 #hourSave20{grid-column:1/-1;grid-row:1;min-height:54px;background:linear-gradient(120deg,#237d57,#004638);color:white;font-size:18px;border-radius:18px;box-shadow:0 4px 8px #154b332a}
+#hourly809r20 button:disabled{opacity:.45}
+#hourReminder20{position:fixed;inset:0;z-index:2147483647;background:#0007;display:grid;place-items:center;padding:18px;color:#154632}
+#hourReminder20>div{width:min(100%,390px);box-sizing:border-box;border:1px solid #8cb29b;background:#f9fcf9;border-radius:20px;padding:22px;box-shadow:0 12px 40px #0005}
+#hourReminder20 button{margin:5px;min-width:90px}
+#hourReminder20 button:first-of-type{background:#165d43;color:#fff}
+@media(max-width:350px){#hourly809r20 .hour-content{padding:10px}#hourly809r20 .hour-number{gap:7px;grid-template-columns:44px minmax(0,1fr) 44px}#iphoneLiveV515 #hourToggle20 button{font-size:12px}#hourly809r20 .hour-total strong{font-size:32px}}
+#iphoneLiveV515 #hourly809r20 .hour-total,#iphoneLiveV515 #hourly809r20 .hour-total *,#iphoneLiveV515 #hourly809r20 header *,#iphoneLiveV515 #hourly809r20 .hour-editor h3,#iphoneLiveV515 #hourly809r20 #hourSave20,#iphoneLiveV515 #hourToggle20 [aria-pressed=true],#hourReminder20 button:first-of-type{color:#fff!important;-webkit-text-fill-color:#fff!important}
+#iphoneLiveV515 #hourly809r20 .hour-total strong{font-size:40px!important;font-weight:700!important}
+#iphoneLiveV515 #hourly809r20 .hour-editor h3{font-size:25px!important}
+#iphoneLiveV515 #hourly809r20 input{color:#073c2c!important;-webkit-text-fill-color:#073c2c!important}
+#iphoneLiveV515 #hourly809r20 button{color:#134a36!important;-webkit-text-fill-color:#134a36!important}
+#iphoneLiveV515 #hourly809r20 #hourSave20{color:white!important;-webkit-text-fill-color:white!important}
+#hourReminder20 button{color:#134a36!important;-webkit-text-fill-color:#134a36!important}
+#hourReminder20 button:first-of-type{color:white!important;-webkit-text-fill-color:white!important}
+#iphoneLiveV515 #hourly809r20 .hour-number button{border-radius:50%!important}
+#iphoneLiveV515 #hourly809r20 .hour-number input{appearance:textfield;-moz-appearance:textfield}
+#iphoneLiveV515 #hourly809r20 .hour-number input::-webkit-inner-spin-button{appearance:none}
+#hourly809r20 #hourList20{max-height:260px;overflow:auto}
+#hourly809r20 #hourAllocation20{padding:12px;background:#e3efe7;border-radius:14px;margin-top:12px;font-size:13px}
+#hourly809r20 #hourAllocation20[hidden]{display:none}
+#hourly809r20 #hourAllocation20 input{display:block;width:100%;box-sizing:border-box;min-height:44px;background:white;border:1px solid #9db8a8;border-radius:10px;font-size:18px;padding:8px}
+#iphoneLiveV515.hourly-open20 .lv515-note{display:none}
+#iphoneLiveV515#iphoneLiveV515.hourly-open20 .lv515-live-actions>button{min-width:0!important;min-height:66px!important;padding:12px 8px!important;font-size:16px!important;line-height:1.5!important;white-space:normal!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important}
+#iphoneLiveV515#iphoneLiveV515.hourly-open20 .lv515-live-actions>button span{min-width:0!important;font-size:16px!important;line-height:1.5!important}
+#iphoneLiveV515#iphoneLiveV515.hourly-open20 .lv515-live-actions .live-action-icon809r11{width:25px!important;height:25px!important;flex:0 0 25px!important}
+</style>
+<script id="hourly809r20-script">(function(){
+  'use strict';
+  const live=window.heraLiveV515, root=document.getElementById('iphoneLiveV515');
+  const stateKey='hera_live_trip_v515', eventsKey='hera_live_catch_events_v11660';
+  const form=()=>document.getElementById('entryForm');
+  const segments=()=>[...document.querySelectorAll('#segments .segment')];
+  function state(){try{return JSON.parse(localStorage.getItem(stateKey)||'null');}catch(e){return null;}}
+  const events=()=>window.parseCatchTimesV11660(form().elements.catchTimesJson?.value||localStorage.getItem(eventsKey));
+  const active=()=>phoneV11806()&&!form().elements.editId.value&&live.isRunning();
+  const weight=e=>window.catchEventCountV11796(e);
+  let selected='', mode='single', dirtyInput=false, snapshot='', reminder=null, snooze=0,slotKeys='';
+  const panel=document.createElement('section');panel.id='hourly809r20';panel.hidden=true;
+  panel.innerHTML='<div class="hour-total"><span>現在の総枚数 <strong id="hourTotal20">0</strong> 枚</span><span>リャンコ <strong id="hourRyanko20">0</strong> 回</span></div><div class="hour-card"><header><h2>まとめて入力</h2><p>時間ごとの釣果をまとめて記録できます</p></header><div class="hour-content"><label>対象の時間帯・釣り方<select id="hourChoice20"></select></label><div class="hour-editor"><h3 id="hourTitle20"></h3><span id="hourState20"></span><label for="hourCount20">枚数（リャンコ分を含む）</label><div class="hour-number"><button type="button" data-step="-1" data-field="hourCount20" aria-label="枚数を減らす">−</button><input id="hourCount20" type="number" min="0" max="10000" step="1" inputmode="numeric" aria-label="時間帯の枚数"><button type="button" data-step="1" data-field="hourCount20" aria-label="枚数を増やす">＋</button></div><div class="hour-presets">'+[0,3,5,10].map(n=>'<button type="button" data-value="'+n+'">'+n+'枚</button>').join('')+'</div><label for="hourPair20">リャンコ（任意）</label><div class="hour-number hour-pair"><button type="button" data-step="-1" data-field="hourPair20" aria-label="リャンコを減らす">−</button><input id="hourPair20" type="number" min="0" max="5000" step="1" inputmode="numeric" aria-label="時間帯のリャンコ回数"><button type="button" data-step="1" data-field="hourPair20" aria-label="リャンコを増やす">＋</button></div></div><p class="hour-help">選んだ時間帯・釣り方の合計を入力します。1枚ずつ記録した分を含めて訂正できます。</p><p id="hourMessage20" role="status" aria-live="polite"></p><h3>過去の時間帯の修正</h3><div id="hourList20"></div><div class="hour-actions"><button type="button" id="hourPrev20">← 前の時間帯</button><button type="button" id="hourSave20">この時間を保存</button><button type="button" id="hourNext20">次の時間帯 →</button></div></div></div>';
+  const toggle=document.createElement('div');toggle.id='hourToggle20';toggle.hidden=true;
+  toggle.innerHTML='<button type="button" data-mode="single" aria-pressed="true">1枚ずつ記録</button><button type="button" data-mode="hourly" aria-pressed="false">1時間ごとにまとめて入力</button>';
+  const running=document.getElementById('lv515Running');running.prepend(panel);running.prepend(toggle);
+  const $=id=>document.getElementById(id);
+  const allocation=document.createElement('div');allocation.id='hourAllocation20';allocation.hidden=true;
+  allocation.innerHTML='<p id="hourAllocationNote20"></p><label>今回の枚数に含める時間未記録分<input id="hourAllocateCount20" type="number" min="0" step="1" inputmode="numeric" value="0"></label><label>そのうちリャンコ（回）<input id="hourAllocatePair20" type="number" min="0" step="1" inputmode="numeric" value="0"></label>';
+  panel.querySelector('.hour-editor').after(allocation);
+  function stamp(d){const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';}
+  function slots(){
+    const date=form().elements.date.value, now=Date.now(), out=[];
+    segments().forEach((seg,index)=>{
+      const start=seg.querySelector('.seg-start')?.value||form().elements.start.value;
+      let from=new Date(date+'T'+start), to=new Date(date+'T'+(seg.querySelector('.seg-end')?.value||'00:00'));
+      if(index===segments().length-1)to=new Date(now);
+      else if(to<from)to.setDate(to.getDate()+1);
+      if(!Number.isFinite(+from)||!Number.isFinite(+to)||from>now)return;
+      to=new Date(Math.min(+to,now));const cursor=new Date(from);cursor.setMinutes(0,0,0);
+      for(let n=0;cursor<=to&&n<48;n++,cursor.setHours(cursor.getHours()+1)){
+        if(+cursor===+to&&index<segments().length-1)break;
+        const begin=+cursor,end=begin+3600000,key=index+'|'+stamp(cursor);
+        out.push({key,index,begin,end,at:stamp(new Date(Math.max(begin,+from))),label:cursor.getHours()+'時〜'+new Date(end).getHours()+'時',method:'釣り方'+(index+1)+' '+(seg.querySelector('.seg-method')?.value||''),closed:end<=now});
+      }
+    });return out;
+  }
+  function belongs(e,s){const at=Date.parse(e.at);return Number(e.segment||1)===s.index+1&&at>=s.begin&&at<s.end;}
+  function values(s){const rows=events().filter(e=>belongs(e,s));return {count:rows.reduce((n,e)=>n+weight(e),0),pair:rows.filter(e=>weight(e)===2).length,entered:rows.length>0||!!state()?.hourly20?.saved?.[s.key]};}
+  function unallocated(s){
+    const seg=segments()[s.index],rows=events().filter(e=>Number(e.segment||1)===s.index+1);
+    return {count:Math.max(0,Number(seg.querySelector('.seg-count').value||0)-rows.reduce((n,e)=>n+weight(e),0)),pair:Math.max(0,Number(seg.querySelector('.seg-ryanko').value||0)-rows.filter(e=>weight(e)===2).length)};
+  }
+  function signature(){return JSON.stringify([events(),form().elements.specialRyanko806?.value,segments().map(s=>[s.querySelector('.seg-count')?.value,s.querySelector('.seg-ryanko')?.value])]);}
+  function discard(){return !dirtyInput||window.confirm('この時間帯の未保存の入力を破棄しますか？');}
+  function choose(key){if(!discard())return false;selected=key;dirtyInput=false;render(true);return true;}
+  function render(load=false){
+    const list=slots();slotKeys=list.map(s=>s.key).join(',');if(!list.some(s=>s.key===selected)){selected=list.at(-1)?.key||'';load=true;}
+    $('hourTotal20').textContent=segments().reduce((n,s)=>n+Number(s.querySelector('.seg-count')?.value||0),0);
+    $('hourRyanko20').textContent=methodRyankoTotal806();
+    const choice=$('hourChoice20');choice.replaceChildren(...list.map(s=>new Option(s.label+' · '+s.method,s.key)));choice.value=selected;
+    const current=list.find(s=>s.key===selected);if(!current)return;
+    const v=values(current);$('hourTitle20').textContent=current.label;$('hourState20').textContent=v.entered?'入力済み・訂正できます':'未入力';
+    const missing=unallocated(current);allocation.hidden=!missing.count&&!missing.pair;
+    $('hourAllocationNote20').textContent='時間未記録の'+missing.count+'枚・リャンコ'+missing.pair+'回が合計に含まれています。今回の入力に含める分を指定してください（追加分のみなら0）。';
+    if(load){$('hourAllocateCount20').value=0;$('hourAllocatePair20').value=0;$('hourCount20').value=v.count;$('hourPair20').value=v.pair;snapshot=signature();$('hourMessage20').textContent='';}
+    $('hourList20').replaceChildren(...list.map(s=>{const b=document.createElement('button'),v=values(s);b.type='button';b.textContent=s.label+' · '+s.method+'　'+(v.entered?v.count+'枚／リャンコ '+v.pair+'回':'未入力');b.classList.toggle('selected',s.key===selected);b.onclick=()=>choose(s.key);return b;}));
+    $('hourPrev20').disabled=list[0].key===selected;$('hourNext20').disabled=list.at(-1).key===selected;
+  }
+  function persist(nextEvents,nextState){
+    const f=form(), previous=new Map(), payloads={};
+    payloads[eventsKey]=JSON.stringify(nextEvents);payloads[stateKey]=JSON.stringify(nextState);
+    const fields=Object.fromEntries(new FormData(f).entries());fields.catchTimesJson=payloads[eventsKey];
+    payloads.hera_iphone_entry_draft_v1=JSON.stringify({version:1,savedAt:new Date().toISOString(),form:fields,segments:getSegments()});
+    if(specialModeV11806())payloads.hera_live_special_v11806=JSON.stringify({date:f.elements.date.value,place:f.elements.place.value,total:String(nextState.total),events:specialEventsV11806()});
+    try{for(const [key,value] of Object.entries(payloads)){previous.set(key,localStorage.getItem(key));localStorage.setItem(key,value);}}
+    catch(e){for(const [key,value] of previous){if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}throw e;}
+    f.elements.catchTimesJson.value=payloads[eventsKey];dirty=true;calcEntry();syncSpecialTotalsV11806();live.paint();window.applyCatchAnalysisV11660();
+  }
+  function save(){
+    if(!active())return;
+    const s=slots().find(s=>s.key===selected), count=Number($('hourCount20').value),pair=Number($('hourPair20').value);
+    const msg=$('hourMessage20');
+    if(!s||!/^\d+$/.test($('hourCount20').value)||$('hourPair20').value!==''&&!/^\d+$/.test($('hourPair20').value)||!Number.isSafeInteger(count)||count>10000||!Number.isSafeInteger(pair)||pair*2>count){msg.textContent='0以上の整数を入力してください。リャンコ1回は2枚として枚数に含めます（最大10000枚）。';return;}
+    if(signature()!==snapshot){msg.textContent='記録が更新されています。時間帯を選び直して確認してください。';return;}
+    const old=values(s), all=events().filter(e=>!belongs(e,s)), seg=segments()[s.index],countEl=seg.querySelector('.seg-count'),pairEl=seg.querySelector('.seg-ryanko');
+    const missing=unallocated(s),assigned=Number($('hourAllocateCount20').value),assignedPair=Number($('hourAllocatePair20').value);
+    if(!Number.isSafeInteger(assigned)||!Number.isSafeInteger(assignedPair)||assigned<0||assignedPair<0||assigned>missing.count||assignedPair>missing.pair||assignedPair*2>assigned||(missing.pair-assignedPair)*2>missing.count-assigned){msg.textContent='時間未記録分の枚数・リャンコの割り当てを確認してください。';return;}
+    const before=[countEl.value,pairEl.value], nextCount=Number(before[0]||0)-old.count-assigned+count,nextPair=Number(before[1]||0)-old.pair-assignedPair+pair;
+    if(nextCount<0||nextPair<0){msg.textContent='釣り方の合計と時間帯の記録が一致しません。入力内容を確認してください。';return;}
+    for(let n=0;n<pair;n++)all.push({at:s.at,time:s.at.slice(11),segment:s.index+1,count:2,type:'ryanko',hourly:true});
+    for(let n=0;n<count-pair*2;n++)all.push({at:s.at,time:s.at.slice(11),segment:s.index+1,count:1,type:'normal',hourly:true});
+    all.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
+    const st=state();st.hourly20=st.hourly20||{saved:{}};st.hourly20.saved[s.key]=true;st.hourly20.enabled=true;
+    const specialField=form().elements.specialRyanko806,previousSpecial=specialField?.value;
+    if(specialField&&assignedPair){let left=assignedPair;specialField.value=JSON.stringify(specialEventsV11806().filter(e=>{if(e.segmentIndex===s.index&&left>0){left--;return false;}return true;}));}
+    countEl.value=nextCount;pairEl.value=nextPair;st.total=segments().reduce((n,x)=>n+Number(x.querySelector('.seg-count').value||0),0);
+    try{persist(all,st);dirtyInput=false;render(true);msg.textContent=s.label+'を保存しました。';}
+    catch(e){[countEl.value,pairEl.value]=before;if(specialField)specialField.value=previousSpecial;msg.textContent='端末に保存できません。空き容量を確認して再試行してください。';}
+  }
+  function setMode(next){if(!active()||!discard())return;dirtyInput=false;mode=next;root.classList.toggle('hourly-open20',next==='hourly');panel.hidden=next!=='hourly';toggle.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===next)));if(next==='hourly'){const st=state();st.hourly20=st.hourly20||{saved:{}};st.hourly20.enabled=true;try{localStorage.setItem(stateKey,JSON.stringify(st));}catch(e){$('hourMessage20').textContent='端末に設定を保存できません。';}render(true);} tick(); }
+  toggle.onclick=e=>{const b=e.target.closest('[data-mode]');if(b)setMode(b.dataset.mode);};
+  panel.addEventListener('input',()=>dirtyInput=true);
+  panel.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.step){const input=$(b.dataset.field);input.value=Math.max(0,Math.min(10000,Number(input.value||0)+Number(b.dataset.step)));dirtyInput=true;}if(b.dataset.value!==undefined){$('hourCount20').value=b.dataset.value;dirtyInput=true;}};
+  $('hourChoice20').onchange=e=>{if(!choose(e.target.value))e.target.value=selected;};$('hourSave20').onclick=save;
+  for(const [id,delta]of [['hourPrev20',-1],['hourNext20',1]])$(id).onclick=()=>{const list=slots(),s=list[list.findIndex(s=>s.key===selected)+delta];if(s)choose(s.key);};
+  function tick(){
+    const on=active();toggle.hidden=!on;
+    if(!on){panel.hidden=true;root.classList.remove('hourly-open20','hourly-enabled20');reminder?.remove();reminder=null;mode='single';selected='';dirtyInput=false;toggle.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));return;}
+    if(mode==='hourly')panel.hidden=false;
+    if(mode==='hourly'&&!dirtyInput&&slots().map(s=>s.key).join(',')!==slotKeys)render(false);
+    root.classList.toggle('hourly-enabled20',!!state()?.hourly20?.enabled);
+    if(document.hidden||!root.classList.contains('is-open')||!state()?.hourly20?.enabled||dirtyInput||reminder||Date.now()<snooze)return;
+    const missing=slots().find(s=>s.closed&&!values(s).entered);if(!missing)return;
+    reminder=document.createElement('div');reminder.id='hourReminder20';reminder.setAttribute('role','dialog');reminder.setAttribute('aria-modal','true');reminder.setAttribute('aria-label','時間帯の未入力');
+    const box=document.createElement('div'),p=document.createElement('p');p.textContent=missing.label+'（'+missing.method+'）の釣果が未入力です。入力してください。';box.append(p);
+    for(const [text,open]of [['入力する',true],['あとで',false]]){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=()=>{reminder.remove();reminder=null;snooze=Date.now()+15*60000;if(open){setMode('hourly');choose(missing.key);}};box.append(b);}reminder.append(box);document.body.append(reminder);box.querySelector('button').focus();
+  }
+  root.addEventListener('click',e=>{
+    if(!dirtyInput||e.target.closest('#hourly809r20,#hourToggle20')||!e.target.closest('button'))return;
+    if(!discard()){e.preventDefault();e.stopImmediatePropagation();}else dirtyInput=false;
+  },true);
+  // Special venues also use the same timed events once hourly entry is enabled.
+  const plus=live.plus;
+  live.plus=function(amount){
+    if(!active()||!specialModeV11806()||!state()?.hourly20?.enabled)return plus.apply(this,arguments);
+    amount=amount===2?2:1;
+    const rows=segments(),seg=rows.at(-1),count=seg.querySelector('.seg-count'),pair=seg.querySelector('.seg-ryanko'),before=[count.value,pair.value],all=events(),now=new Date(),at=stamp(now).slice(0,-2)+String(now.getSeconds()).padStart(2,'0');
+    count.value=Number(count.value||0)+amount;if(amount===2)pair.value=Number(pair.value||0)+1;
+    all.push({at,time:at.slice(11),segment:rows.length,count:amount,type:amount===2?'ryanko':'normal'});
+    const st=state();st.total=rows.reduce((n,s)=>n+Number(s.querySelector('.seg-count').value||0),0);
+    try{persist(all,st);}catch(e){[count.value,pair.value]=before;alert('端末に保存できません。空き容量を確認してください。');}
+  };
+  const specialDialog=requestSpecialResultV11806;
+  requestSpecialResultV11806=function(){
+    const result=specialDialog.apply(this,arguments),enabled=!!state()?.hourly20?.enabled;
+    for(const id of ['specialSegmentCount806','specialSegmentRyanko806'])if($(id))$(id).readOnly=enabled;
+    if(enabled&&$('specialResultDescription806'))$('specialResultDescription806').textContent='時間帯・カウンターから集計した釣果です。訂正する場合はキャンセルして時間帯を選んでください。';
+    return result;
+  };
+  const specialCommit=commitSpecialResultV11806;
+  commitSpecialResultV11806=function(){
+    if(!active()||!state()?.hourly20?.enabled)return specialCommit.apply(this,arguments);
+    const p=specialResultPending806;if(!p)return;
+    if(p.generation!==window.__entryGeneration806||form().elements.place.value!==p.place||!p.row.el.isConnected){cancelSpecialResultV11806();return;}
+    specialResultPending806=null;$('specialResultModal806').hidden=true;
+    specialResultPermit806=p.kind;try{p.next();}finally{specialResultPermit806='';}
+  };
+  const minus=live.minus;live.minus=function(){
+    if(active()&&events().at(-1)?.hourly){setMode('hourly');$('hourMessage20').textContent='まとめ入力した記録は、該当時間帯を選んで訂正してください。';return;}
+    if(active()&&specialModeV11806()&&state()?.hourly20?.enabled){
+      const all=events(),last=all.at(-1);if(!last)return;
+      const seg=segments()[Number(last.segment||1)-1],count=seg.querySelector('.seg-count'),pair=seg.querySelector('.seg-ryanko'),before=[count.value,pair.value];
+      if(Number(count.value)<weight(last)||weight(last)===2&&Number(pair.value)<1)return;
+      count.value=Number(count.value)-weight(last);if(weight(last)===2)pair.value=Number(pair.value)-1;all.pop();
+      const st=state();st.total=segments().reduce((n,s)=>n+Number(s.querySelector('.seg-count').value||0),0);
+      try{persist(all,st);}catch(e){[count.value,pair.value]=before;alert('端末に保存できません。空き容量を確認してください。');}return;
+    }
+    return minus.apply(this,arguments);
+  };
+  setInterval(tick,1000);document.addEventListener('visibilitychange',tick);
+  window.heraHourly20={slots,values,save,setMode,tick};
 })();
 </script>
